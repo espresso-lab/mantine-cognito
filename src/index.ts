@@ -11,3 +11,5 @@ export type {
   UpdateAttributesProps,
   VerifyAttributeProps,
 } from "./Context/AuthContext";
+
+export { getIdToken, getAccessToken } from "./Context/cognito";

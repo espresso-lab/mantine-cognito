@@ -43,18 +43,11 @@ import { useEffect, useState } from "react";
 
 export function AnyComponent() {
   const { logout, userAttributes } = useAuth();
-
-  const [name, setName] = useState("");
-
-  useEffect(() => {
-    if (userAttributes) {
-      setName(String(userAttributes?.given_name) || "");
-    }
-  }, [userAttributes]);
-
+  const { given_name } = userAttributes;
+  
   return (
     <Paper>
-      <Title>Hello {name}</Title>
+      <Title>Hello {given_name}</Title>
       <Button onClick={logout}>Logout</Button>
     </Paper>
   );
@@ -63,3 +56,18 @@ export function AnyComponent() {
 
 In the example above, the `useAuth` hook is used to get the user attributes and the logout function.
 The `useAuth` hook works only inside the `MantineAuth`-Provider.
+
+### Backend authorization
+
+```tsx
+import { getIdToken, getAccessToken } from "@espresso-lab/mantine-cognito";
+
+export async function myApiCall() {
+  fetch("https://example.com/api", {
+      method: "GET",
+      headers: {
+          "Authorization": await getIdToken() ?? ""
+      }
+  });
+}
+```
