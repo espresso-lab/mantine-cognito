@@ -22,8 +22,9 @@ export const translation = {
     forgotPassword: "Passwort vergessen?",
   },
   validation: {
-    email: "E-Mail ist ungültig",
+    email: "E-Mail-Adresse ist ungültig",
     password: "Passwort entspricht nicht den Anforderungen",
     code: "Code ist ungültig",
+    incorrect_user_or_password: "E-Mail-Adresse oder Passwort falsch."
   },
 };

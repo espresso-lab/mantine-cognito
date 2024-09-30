@@ -92,8 +92,8 @@ export function Login() {
             break;
           }
           case "NotAuthorizedException": {
-            loginForm.setFieldError("email", reason.message);
-            loginForm.setFieldError("password", reason.message);
+            loginForm.setFieldError("email", translation.validation.incorrect_user_or_password);
+            loginForm.setFieldError("password", translation.validation.incorrect_user_or_password);
             break;
           }
           case "CodeMismatchException": {
