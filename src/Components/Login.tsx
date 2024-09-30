@@ -37,7 +37,7 @@ export function Login() {
     initialValues: {
       email: "",
       password: "",
-      remember: false,
+      remember: true,
     },
     validate: {
       email: isEmail(translation.validation.email),
@@ -92,7 +92,8 @@ export function Login() {
             break;
           }
           case "NotAuthorizedException": {
-            loginForm.setFieldError("password", "Incorrect password.");
+            loginForm.setFieldError("email", reason.message);
+            loginForm.setFieldError("password", reason.message);
             break;
           }
           case "CodeMismatchException": {

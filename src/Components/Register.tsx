@@ -60,13 +60,13 @@ export function Register() {
         <Stack>
           <TextInput
             label={translation.fields.email}
-            placeholder="you@email.com"
+            placeholder={translation.placeholders.email}
             withAsterisk
             {...form.getInputProps("email")}
           />
           <NewPasswordInput
             label={translation.fields.password}
-            placeholder="Password"
+            placeholder={translation.placeholders.password}
             {...form.getInputProps("password")}
             withAsterisk
             showRequirements={
