@@ -48,14 +48,20 @@ interface UserPoolAttributes {
   cognitoClientId: string;
 }
 
-function getUserPool(poolProps: UserPoolAttributes, remember: boolean = false) {
-  return new CognitoUserPool({
+export function initUserPool(poolProps: UserPoolAttributes, remember: boolean = false) {
+  window.MantineCognitoUserPool = new CognitoUserPool({
     UserPoolId: poolProps.cognitoUserPoolId,
     ClientId: poolProps.cognitoClientId,
     Storage: remember
-      ? new CookieStorage({ domain: `.${window.location.hostname}` })
-      : window.sessionStorage,
+        ? new CookieStorage({ domain: `.${window.location.hostname}` })
+        : window.sessionStorage,
   });
+
+  return window.MantineCognitoUserPool;
+}
+
+function getUserPool() {
+  return window.MantineCognitoUserPool;
 }
 
 /**
@@ -63,13 +69,12 @@ function getUserPool(poolProps: UserPoolAttributes, remember: boolean = false) {
  */
 
 function getCognitoUser(
-  poolProps: UserPoolAttributes,
   email: string,
   remember: boolean = false,
 ) {
   return new CognitoUser({
     Username: email,
-    Pool: getUserPool(poolProps, remember),
+    Pool: getUserPool(),
     Storage: remember
       ? new CookieStorage({ domain: `.${window.location.hostname}` })
       : window.sessionStorage,
@@ -80,11 +85,11 @@ function getCognitoUser(
  * get current user
  */
 
-export function getCurrentUser(poolProps: UserPoolAttributes) {
-  const sessionUser = getUserPool(poolProps).getCurrentUser();
+export function getCurrentUser() {
+  const sessionUser = getUserPool().getCurrentUser();
   return sessionUser !== null
     ? sessionUser
-    : getUserPool(poolProps, true).getCurrentUser();
+    : getUserPool().getCurrentUser();
 }
 
 /**
@@ -92,12 +97,11 @@ export function getCurrentUser(poolProps: UserPoolAttributes) {
  */
 
 export function signUp(
-  poolProps: UserPoolAttributes,
   email: string,
   password: string,
 ) {
   return new Promise<ISignUpResult>((resolve, reject) =>
-    getUserPool(poolProps).signUp(
+    getUserPool().signUp(
       email,
       password,
       [
@@ -125,15 +129,14 @@ export function signUp(
  */
 
 export function signIn(
-  poolProps: UserPoolAttributes,
   email: string,
   password: string,
   remember: boolean = false,
   totp?: string,
 ) {
   return new Promise<CognitoUser>((resolve, reject) => {
-    signOut(poolProps);
-    const cognitoUser = getCognitoUser(poolProps, email, remember);
+    signOut();
+    const cognitoUser = getCognitoUser(email, remember);
     cognitoUser.authenticateUser(
       new AuthenticationDetails({
         Username: email,
@@ -181,8 +184,8 @@ export function signIn(
  * sign out
  */
 
-export function signOut(poolProps: UserPoolAttributes) {
-  const cognitoUser = getCurrentUser(poolProps);
+export function signOut() {
+  const cognitoUser = getCurrentUser();
   cognitoUser?.globalSignOut({
     onSuccess: () => {},
     onFailure: () => {},
@@ -196,12 +199,12 @@ export function signOut(poolProps: UserPoolAttributes) {
  * get session
  */
 
-export function getSession(poolProps: UserPoolAttributes) {
+export function getSession() {
   return new Promise<{
     session: CognitoUserSession;
     authenticatedUser: CognitoUser;
   }>((resolve, reject) => {
-    const cognitoUser = getCurrentUser(poolProps);
+    const cognitoUser = getCurrentUser();
     if (cognitoUser === null) reject(null);
     cognitoUser?.getSession(
       (error: Error, session: CognitoUserSession | null) => {
@@ -219,15 +222,15 @@ export function getSession(poolProps: UserPoolAttributes) {
  */
 
 export function authenticatedCall<Type>(
-  poolProps: UserPoolAttributes,
   callback: AuthenticatedCallCallback<Type>,
 ) {
-  return new Promise<Type>(async (resolve, reject) => {
-    const { authenticatedUser } = await getSession(poolProps);
-    if (!authenticatedUser) {
-      return reject(new Error("Unable to get current user."));
-    }
-    callback(authenticatedUser, resolve, reject);
+  return new Promise<Type>((resolve, reject) => {
+    getSession().then(({ authenticatedUser }) => {
+      if (!authenticatedUser) {
+        return reject(new Error("Unable to get current user."));
+      }
+      callback(authenticatedUser, resolve, reject);
+    });
   });
 }
 
@@ -235,8 +238,8 @@ export function authenticatedCall<Type>(
  * get session valid
  */
 
-export async function isSessionValid(poolProps: UserPoolAttributes) {
-  const { session } = await getSession(poolProps);
+export async function isSessionValid() {
+  const { session } = await getSession();
   return session?.isValid();
 }
 
@@ -244,8 +247,8 @@ export async function isSessionValid(poolProps: UserPoolAttributes) {
  * get access token
  */
 
-export async function getAccessToken(poolProps: UserPoolAttributes) {
-  const { session } = await getSession(poolProps);
+export async function getAccessToken() {
+  const { session } = await getSession();
   return session?.getAccessToken().getJwtToken();
 }
 
@@ -253,8 +256,8 @@ export async function getAccessToken(poolProps: UserPoolAttributes) {
  * get id token
  */
 
-export async function getIdToken(poolProps: UserPoolAttributes) {
-  const { session } = await getSession(poolProps);
+export async function getIdToken() {
+  const { session } = await getSession();
   return session?.getIdToken().getJwtToken();
 }
 
@@ -262,9 +265,8 @@ export async function getIdToken(poolProps: UserPoolAttributes) {
  * get user attributes
  */
 
-export function getUserAttributes(poolProps: UserPoolAttributes) {
+export function getUserAttributes() {
   return authenticatedCall<UserAttributes>(
-    poolProps,
     (authenticatedUser, resolve, reject) => {
       authenticatedUser.getUserAttributes((error, attributes) => {
         if (error) return reject(error);
@@ -289,12 +291,11 @@ export function getUserAttributes(poolProps: UserPoolAttributes) {
  */
 
 export function confirmSignUp(
-  poolProps: UserPoolAttributes,
   email: string,
   totp: string,
 ) {
   return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(poolProps, email);
+    const cognitoUser = getCognitoUser(email);
     cognitoUser?.confirmRegistration(totp, true, (error, data) => {
       if (error) {
         reject(error);
@@ -311,9 +312,9 @@ export function confirmSignUp(
  * new account confirmation code
  */
 
-export function resendAccountConfirmationCode(poolProps: UserPoolAttributes) {
+export function resendAccountConfirmationCode() {
   return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCurrentUser(poolProps);
+    const cognitoUser = getCurrentUser();
     cognitoUser?.resendConfirmationCode((error, data) => {
       if (error) {
         reject(error);
@@ -327,9 +328,8 @@ export function resendAccountConfirmationCode(poolProps: UserPoolAttributes) {
  * resend email confirmation code
  */
 
-export function resendEmailConfirmationCode(poolProps: UserPoolAttributes) {
+export function resendEmailConfirmationCode() {
   return authenticatedCall<string>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       cognitoUser.getAttributeVerificationCode("email", {
         onSuccess: (data) => {
@@ -348,7 +348,6 @@ export function resendEmailConfirmationCode(poolProps: UserPoolAttributes) {
  */
 
 export function updateUserAttributes(
-  poolProps: UserPoolAttributes,
   attributes: UserAttributes,
 ) {
   const attributeList = Object.keys(attributes).map(
@@ -359,7 +358,6 @@ export function updateUserAttributes(
       }),
   );
   return authenticatedCall<string>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       cognitoUser.updateAttributes(attributeList, (error, result) => {
         if (error != null) return reject(error);
@@ -373,9 +371,9 @@ export function updateUserAttributes(
  * password reset
  */
 
-export function passwordReset(poolProps: UserPoolAttributes, email: string) {
+export function passwordReset(email: string) {
   return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(poolProps, email);
+    const cognitoUser = getCognitoUser(email);
     cognitoUser?.forgotPassword({
       onSuccess: (data) => {
         resolve(data);
@@ -392,13 +390,12 @@ export function passwordReset(poolProps: UserPoolAttributes, email: string) {
  */
 
 export function confirmPasswordReset(
-  poolProps: UserPoolAttributes,
   email: string,
   totp: string,
   password: string,
 ) {
   return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(poolProps, email);
+    const cognitoUser = getCognitoUser( email);
     cognitoUser.confirmPassword(totp, password, {
       onSuccess: (success) => {
         resolve(success);
@@ -438,12 +435,10 @@ export function newPasswordChallenge(
  */
 
 export function verifyUserAttribute(
-  poolProps: UserPoolAttributes,
   attribute: string,
   totp: string,
 ) {
   return authenticatedCall<string>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       cognitoUser.verifyAttribute(attribute, totp, {
         onFailure(error) {
@@ -461,9 +456,8 @@ export function verifyUserAttribute(
  * associate software token
  */
 
-export function associateSoftwareToken(poolProps: UserPoolAttributes) {
+export function associateSoftwareToken() {
   return authenticatedCall<string>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       cognitoUser.associateSoftwareToken({
         associateSecretCode: (secretCode) => {
@@ -481,9 +475,8 @@ export function associateSoftwareToken(poolProps: UserPoolAttributes) {
  * get user data
  */
 
-export function getUserData(poolProps: UserPoolAttributes) {
+export function getUserData() {
   return authenticatedCall<UserData | undefined>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       cognitoUser.getUserData((err, data) => {
         if (err != null) return reject(err);
@@ -498,11 +491,10 @@ export function getUserData(poolProps: UserPoolAttributes) {
  */
 
 export function verifySoftwareToken(
-  poolProps: UserPoolAttributes,
   code: string,
   deviceName: string,
 ) {
-  return authenticatedCall(poolProps, (cognitoUser, resolve, reject) => {
+  return authenticatedCall((cognitoUser, resolve, reject) => {
     cognitoUser.verifySoftwareToken(code, deviceName, {
       onSuccess: () => {
         resolve(undefined);
@@ -518,25 +510,24 @@ export function verifySoftwareToken(
  * enable mfa
  */
 
-export function enableMFA(poolProps: UserPoolAttributes) {
-  return setMFA(poolProps, true);
+export function enableMFA() {
+  return setMFA(true);
 }
 
 /**
  * disable mfa
  */
 
-export function disableMFA(poolProps: UserPoolAttributes) {
-  return setMFA(poolProps, false);
+export function disableMFA() {
+  return setMFA(false);
 }
 
 /**
  * set mfa
  */
 
-export function setMFA(poolProps: UserPoolAttributes, enabled: boolean) {
+export function setMFA(enabled: boolean) {
   return authenticatedCall<string | undefined>(
-    poolProps,
     (cognitoUser, resolve, reject) => {
       const totpMfaSettings = {
         PreferredMfa: enabled,
@@ -564,7 +555,7 @@ export function setMFA(poolProps: UserPoolAttributes, enabled: boolean) {
  * get user groups
  */
 
-export async function getUserGroups(poolProps: UserPoolAttributes) {
-  const { session } = await getSession(poolProps);
+export async function getUserGroups() {
+  const { session } = await getSession();
   return session?.getAccessToken()?.decodePayload()?.["cognito:groups"] ?? [];
 }

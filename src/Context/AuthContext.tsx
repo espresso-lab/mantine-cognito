@@ -1,5 +1,5 @@
 import {
-  CognitoUser,
+  CognitoUser, CognitoUserPool,
   CognitoUserSession,
   ISignUpResult,
 } from "amazon-cognito-identity-js";
@@ -16,7 +16,7 @@ import {
   confirmSignUp,
   getSession,
   getUserAttributes,
-  getUserGroups,
+  getUserGroups, initUserPool,
   newPasswordChallenge,
   passwordReset,
   resendAccountConfirmationCode,
@@ -28,6 +28,16 @@ import {
   UserAttributes,
   verifyUserAttribute,
 } from "./cognito";
+
+declare global {
+  interface Window {
+    MantineCognito: {
+      cognitoUserPoolId: string,
+      cognitoClientId: string
+    },
+    MantineCognitoUserPool: CognitoUserPool
+  }
+}
 
 export interface RegisterProps {
   email: string;
@@ -74,10 +84,6 @@ export interface UpdateAttributesProps {
 type Mode = "login" | "register" | "forgotPassword";
 
 type State = {
-  poolProps: {
-    cognitoUserPoolId: string;
-    cognitoClientId: string;
-  };
   allowRegistration: boolean;
   setMode: (mode: Mode) => void;
   mode: Mode;
@@ -123,15 +129,15 @@ export const AuthProvider = ({
   const [isSuperAdmin, setIsSuperAdmin] =
     useState<State["isSuperAdmin"]>(false);
 
-  const poolProps = { cognitoUserPoolId, cognitoClientId };
+  initUserPool({ cognitoUserPoolId, cognitoClientId });
 
   async function checkSession() {
-    getSession(poolProps)
+    getSession()
       .then(async ({ authenticatedUser, session }) => {
         if (session.isValid()) {
           setUser(authenticatedUser);
-          setUserAttributes(await getUserAttributes(poolProps));
-          setUserGroups(await getUserGroups(poolProps));
+          setUserAttributes(await getUserAttributes());
+          setUserGroups(await getUserGroups());
         } else {
           setUser(null);
         }
@@ -150,23 +156,23 @@ export const AuthProvider = ({
   }, [userGroups]);
 
   const register = useCallback(({ email, password }: RegisterProps) => {
-    return signUp(poolProps, email, password);
+    return signUp(email, password);
   }, []);
 
   const confirmRegistration = useCallback(
     ({ email, totp }: ConfirmRegistrationProps) => {
-      return confirmSignUp(poolProps, email, totp);
+      return confirmSignUp(email, totp);
     },
     [],
   );
 
   const forgotPassword = useCallback(({ email }: ForgotPasswordProps) => {
-    return passwordReset(poolProps, email);
+    return passwordReset(email);
   }, []);
 
   const confirmForgotPassword = useCallback(
     ({ email, totp, password }: ConfirmForgotPasswordProps) => {
-      return confirmPasswordReset(poolProps, email, totp, password);
+      return confirmPasswordReset(email, totp, password);
     },
     [],
   );
@@ -174,7 +180,6 @@ export const AuthProvider = ({
   const login = useCallback(
     async ({ email, password, remember, totp }: LoginProps) => {
       const cognitoUser = await signIn(
-        poolProps,
         email,
         password,
         remember,
@@ -187,7 +192,7 @@ export const AuthProvider = ({
   );
 
   const logout = useCallback(async () => {
-    signOut(poolProps);
+    signOut();
     await checkSession();
     window.location.reload();
   }, []);
@@ -211,7 +216,7 @@ export const AuthProvider = ({
 
   const verifyAttribute = useCallback(
     async ({ userAttribute, totp }: VerifyAttributeProps) => {
-      const res = await verifyUserAttribute(poolProps, userAttribute, totp);
+      const res = await verifyUserAttribute(userAttribute, totp);
       await checkSession();
       return res;
     },
@@ -219,16 +224,16 @@ export const AuthProvider = ({
   );
 
   const sendAccountConfirmationCode = useCallback(() => {
-    return resendAccountConfirmationCode(poolProps);
+    return resendAccountConfirmationCode();
   }, []);
 
   const sendEmailConfirmationCode = useCallback(() => {
-    return resendEmailConfirmationCode(poolProps);
+    return resendEmailConfirmationCode();
   }, []);
 
   const updateAttributes = useCallback(
     async ({ userAttributes }: UpdateAttributesProps) => {
-      const res = await updateUserAttributes(poolProps, userAttributes);
+      const res = await updateUserAttributes(userAttributes);
       await checkSession();
       return res;
     },
@@ -237,7 +242,6 @@ export const AuthProvider = ({
 
   const values = useMemo(
     () => ({
-      poolProps,
       allowRegistration,
       mode,
       setMode,
@@ -258,7 +262,6 @@ export const AuthProvider = ({
       updateAttributes,
     }),
     [
-      poolProps,
       allowRegistration,
       mode,
       setMode,
