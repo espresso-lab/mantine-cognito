@@ -2,12 +2,20 @@
   "name": "@espresso-lab/mantine-cognito",
   "private": false,
   "description": "Mantine UI components with AWS Cognito",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "type": "module",
   "main": "dist/index.umd.js",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
+  "author": {
+    "name": "Espresso Lab",
+    "email": "mail@espresso-lab.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/espresso-lab/mantine-cognito"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.es.js",
