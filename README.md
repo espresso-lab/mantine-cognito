@@ -39,12 +39,11 @@ In the example above, the `MantineAuth` component will handle the authentication
 ```tsx
 import { Button, Paper, Title } from "@mantine/core";
 import { useAuth } from "@espresso-lab/mantine-cognito";
-import { useEffect, useState } from "react";
 
 export function AnyComponent() {
   const { logout, userAttributes } = useAuth();
-  const { given_name } = userAttributes;
-  
+  const { given_name } = userAttributes || {};
+
   return (
     <Paper>
       <Title>Hello {given_name}</Title>
