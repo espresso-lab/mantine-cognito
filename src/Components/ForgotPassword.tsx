@@ -7,7 +7,6 @@ import {
   InputLabel,
   Paper,
   PinInput,
-  Stack,
   Text,
   TextInput,
 } from "@mantine/core";
@@ -90,73 +89,69 @@ export function ForgotPassword() {
     <Paper withBorder shadow="md" p={30} mt={30} radius="md">
       {nextStage ? (
         <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
-          <Stack>
-            <Box>
-              <InputLabel required>Recovery Code</InputLabel>
-              <Center>
-                <PinInput
-                  oneTimeCode
-                  type="number"
-                  size="md"
-                  length={6}
-                  autoFocus={nextStage}
-                  {...newPasswordForm.getInputProps("totp")}
-                />
+          <Box>
+            <InputLabel required>Recovery Code</InputLabel>
+            <Center>
+              <PinInput
+                oneTimeCode
+                type="number"
+                size="md"
+                length={6}
+                autoFocus={nextStage}
+                {...newPasswordForm.getInputProps("totp")}
+              />
+            </Center>
+            <Text c="red" size="xs">
+              {newPasswordForm.errors.totp}
+            </Text>
+          </Box>
+          <NewPasswordInput
+            label="Neues Passwort"
+            placeholder="Neues Passwort"
+            {...newPasswordForm.getInputProps("password")}
+            withAsterisk
+          />
+          <Group justify="space-between" mt="lg">
+            <Anchor
+              onClick={() => {
+                newPasswordForm.reset();
+                setStage("login");
+              }}
+              c="dimmed"
+              size="sm"
+            >
+              <Center inline>
+                <IconArrowLeft size={20} />
+                <Text ml={5}>Zurück zum Login</Text>
               </Center>
-              <Text c="red" size="xs">
-                {newPasswordForm.errors.totp}
-              </Text>
-            </Box>
-            <NewPasswordInput
-              label="Neues Passwort"
-              placeholder="Neues Passwort"
-              {...newPasswordForm.getInputProps("password")}
-              withAsterisk
-            />
-            <Group justify="space-between">
-              <Anchor
-                onClick={() => {
-                  newPasswordForm.reset();
-                  setStage("login");
-                }}
-                c="dimmed"
-                size="sm"
-              >
-                <Center inline>
-                  <IconArrowLeft size={20} />
-                  <Text ml={5}>Zurück zum Login</Text>
-                </Center>
-              </Anchor>
-              <Button type="submit">Submit</Button>
-            </Group>
-          </Stack>
+            </Anchor>
+            <Button type="submit">Submit</Button>
+          </Group>
         </form>
       ) : (
         <form onSubmit={forgotPasswordForm.onSubmit(onForgotPassword)}>
-          <Stack>
-            <TextInput
-              label="E-Mail"
-              placeholder="you@email.com"
-              withAsterisk
-              {...forgotPasswordForm.getInputProps("email")}
-            />
-            <Group justify="space-between">
-              <Anchor
-                onClick={() => {
-                  forgotPasswordForm.reset();
-                  setStage("login");
-                }}
-                c="dimmed"
-                size="sm"
-              >
-                <Center inline>
-                  <IconArrowLeft size={20} />
-                  <Text ml={5}>Zurück zum Login</Text>
-                </Center>
-              </Anchor>
-              <Button type="submit">Absenden</Button>
-            </Group>
-          </Stack>
+          <TextInput
+            label="E-Mail"
+            placeholder="you@email.com"
+            withAsterisk
+            {...forgotPasswordForm.getInputProps("email")}
+          />
+          <Group justify="space-between" mt="lg">
+            <Anchor
+              onClick={() => {
+                forgotPasswordForm.reset();
+                setStage("login");
+              }}
+              c="dimmed"
+              size="sm"
+            >
+              <Center inline>
+                <IconArrowLeft size={20} />
+                <Text ml={5}>Zurück zum Login</Text>
+              </Center>
+            </Anchor>
+            <Button type="submit">Absenden</Button>
+          </Group>
         </form>
       )}
     </Paper>

@@ -4,8 +4,8 @@ import {
   Button,
   Center,
   InputLabel,
+  Paper,
   PinInput,
-  Stack,
   Text,
   TextInput,
 } from "@mantine/core";
@@ -21,6 +21,7 @@ import {
   disableMFA,
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
+import { translation } from "../translation";
 
 export interface MFASetupProps {
   mfaAppName: string;
@@ -114,63 +115,72 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
   const enabling =
     code !== undefined ? (
       <form>
-        <Stack>
-          <Text size="sm">
-            Scan the qr code or{" "}
-            <Anchor
-              size="sm"
-              onClick={() => {
-                clipboard.copy(code);
-              }}
-            >
-              click here
-            </Anchor>{" "}
-            to copy the secret code.
-          </Text>
+        <Text size="sm" ta="center">
+          {translation.texts.scanQRCode}
+          <Anchor
+            size="sm"
+            onClick={() => {
+              clipboard.copy(code);
+            }}
+          >
+            {translation.links.clickHere}
+          </Anchor>{" "}
+          {translation.texts.copyCode}
+        </Text>
+        <Center mt="lg">
+          <QRCode value={value} />
+        </Center>
+        <Text size="sm" ta="center" mt="lg">
+          {translation.texts.enterCode}
+        </Text>
+        <TextInput
+          label="Device Name"
+          {...form.getInputProps("deviceName")}
+          mt="lg"
+        />
+        <Box mt="md">
+          <InputLabel required>{translation.title.mfa}</InputLabel>
           <Center>
-            <QRCode value={value} />
+            <PinInput
+              oneTimeCode
+              type="number"
+              size="md"
+              length={6}
+              {...form.getInputProps("totp")}
+            />
           </Center>
-          <Text size="sm">
-            Then enter the code from your authenticator app.
+          <Text c="red" size="xs">
+            {form.errors.totp}
           </Text>
-          <TextInput
-            label="Device Name"
-            {...form.getInputProps("deviceName")}
-          />
-          <Box>
-            <InputLabel required>Multi-Factor Code</InputLabel>
-            <Center>
-              <PinInput
-                oneTimeCode
-                type="number"
-                size="md"
-                length={6}
-                {...form.getInputProps("totp")}
-              />
-            </Center>
-            <Text c="red" size="xs">
-              {form.errors.totp}
-            </Text>
-          </Box>
-        </Stack>
+        </Box>
+        <Button
+          fullWidth
+          mt="lg"
+          onClick={() => {
+            setCode(undefined);
+            setMode("disabled");
+          }}
+        >
+          {translation.buttons.cancel}
+        </Button>
       </form>
     ) : (
       <Text size="sm" c="red">
-        No code received.
+        {translation.errors.noCode}
       </Text>
     );
 
   return (
-    <Stack>
+    <Paper p={30} mt={30} maw={380}>
       {mode === "disabled" && (
-        <Button onClick={onStartEnable}>Enable MFA</Button>
+        <Button onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
       )}
       {mode === "enabling" && enabling}
       {mode === "enabled" && (
         <Button color="red" onClick={onDisable}>
-          Disable MFA
+          {translation.buttons.disableMFA}
         </Button>
       )}
-    </Stack>
+    </Paper>
   );
 }

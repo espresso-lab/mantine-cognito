@@ -11,6 +11,7 @@ import { useInputState } from "@mantine/hooks";
 import { IconCheck, IconX } from "@tabler/icons-react";
 
 import type { PasswordInputProps } from "@mantine/core";
+import { translation } from "../translation";
 
 type NewPasswordInputProps = PasswordInputProps & {
   showRequirements?: boolean;
@@ -38,11 +39,14 @@ const PasswordRequirement = ({
 };
 
 const requirements = [
-  { re: /^.{8,}$/, label: "Has at least 8 characters" },
-  { re: /[0-9]/, label: "Includes number" },
-  { re: /[a-z]/, label: "Includes lowercase letter" },
-  { re: /[A-Z]/, label: "Includes uppercase letter" },
-  { re: /[$&+,:;=?@#|'<>.^*()%!-]/, label: "Includes special symbol" },
+  { re: /^.{8,}$/, label: translation.passwortRequirements.min },
+  { re: /[0-9]/, label: translation.passwortRequirements.number },
+  { re: /[a-z]/, label: translation.passwortRequirements.lowercase },
+  { re: /[A-Z]/, label: translation.passwortRequirements.uppercase },
+  {
+    re: /[$&+,:;=?@#|'<>.^*()%!-]/,
+    label: translation.passwortRequirements.special,
+  },
 ];
 
 const getStrength = (password: NewPasswordInputProps["value"]) => {
@@ -88,8 +92,8 @@ export function NewPasswordInput(props: NewPasswordInputProps) {
             valueString.length > 0 && index === 0
               ? 100
               : strength >= ((index + 1) / 4) * 100
-              ? 100
-              : 0
+                ? 100
+                : 0
           }
           color={strength > 80 ? "teal" : strength > 50 ? "yellow" : "red"}
           key={index}

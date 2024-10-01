@@ -1,6 +1,8 @@
-import {Button, MantineProvider} from "@mantine/core";
+import React from "react";
+import { Button, MantineProvider, Text } from "@mantine/core";
 import { MantineAuth } from "./Components/MantineAuth";
-import {useAuth} from "./Hooks/useAuth";
+import { MFASetup } from "./Components/MFASetup";
+import { useAuth } from "./Hooks/useAuth";
 
 function App() {
   return (
@@ -8,21 +10,25 @@ function App() {
       <MantineAuth
         cognitoUserPoolId="eu-central-1_zkn7FzwJc"
         cognitoClientId="7o7ohldbtts5tj8ual0d2sb8kv"
+        allowRegistration={true}
       >
-          <SecureContent />
+        <SecureContent />
       </MantineAuth>
     </MantineProvider>
   );
 }
 
 function SecureContent() {
-    const { logout, userAttributes } =   useAuth();
-    const {email} = userAttributes || {};
+  const { logout, userAttributes } = useAuth();
+  const { email } = userAttributes || {};
 
-    return <>
-        <p>Logged in as {email}</p>
-        <Button onClick={logout}>Logout</Button>
+  return (
+    <>
+      <Text>Logged in as {email}</Text>
+      <Button onClick={logout}>Logout</Button>
+      <MFASetup mfaAppName="test" />
     </>
+  );
 }
 
 export default App;

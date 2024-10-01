@@ -1,7 +1,6 @@
 import {
   Anchor,
   Paper,
-  Stack,
   TextInput,
   Group,
   Center,
@@ -22,8 +21,8 @@ export function Register() {
       password: "",
     },
     validate: {
-      email: isEmail("Invalid email."),
-      password: isNotEmpty("Password required."),
+      email: isEmail(translation.validation.email),
+      password: isNotEmpty(translation.validation.password),
     },
   });
 
@@ -57,39 +56,38 @@ export function Register() {
   return (
     <Paper withBorder shadow="md" p={30} mt={30} radius="md">
       <form onSubmit={form.onSubmit(onSubmit)}>
-        <Stack>
-          <TextInput
-            label={translation.fields.email}
-            placeholder={translation.placeholders.email}
-            withAsterisk
-            {...form.getInputProps("email")}
-          />
-          <NewPasswordInput
-            label={translation.fields.password}
-            placeholder={translation.placeholders.password}
-            {...form.getInputProps("password")}
-            withAsterisk
-            showRequirements={
-              form.isDirty("password") || form.isTouched("password")
-            }
-          />
-          <Group justify="space-between">
-            <Anchor
-              onClick={() => {
-                form.reset();
-                setStage("login");
-              }}
-              c="dimmed"
-              size="sm"
-            >
-              <Center inline>
-                <IconArrowLeft size={20} />
-                <Text ml={5}>{translation.links.backToLogin}</Text>
-              </Center>
-            </Anchor>
-            <Button type="submit">{translation.buttons.register}</Button>
-          </Group>
-        </Stack>
+        <TextInput
+          label={translation.fields.email}
+          placeholder={translation.placeholders.email}
+          withAsterisk
+          {...form.getInputProps("email")}
+        />
+        <NewPasswordInput
+          label={translation.fields.password}
+          placeholder={translation.placeholders.password}
+          {...form.getInputProps("password")}
+          withAsterisk
+          mt="md"
+          showRequirements={
+            form.isDirty("password") || form.isTouched("password")
+          }
+        />
+        <Group justify="space-between" mt="lg">
+          <Anchor
+            onClick={() => {
+              form.reset();
+              setStage("login");
+            }}
+            c="dimmed"
+            size="sm"
+          >
+            <Center inline>
+              <IconArrowLeft size={20} />
+              <Text ml={5}>{translation.links.backToLogin}</Text>
+            </Center>
+          </Anchor>
+          <Button type="submit">{translation.buttons.register}</Button>
+        </Group>
       </form>
     </Paper>
   );

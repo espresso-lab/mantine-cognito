@@ -8,12 +8,11 @@ import {
   Paper,
   PasswordInput,
   PinInput,
-  Stack,
   Text,
   TextInput,
 } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
-import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
+import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
 import { FirstLogin, NewPasswordRequiredException } from "../Context/cognito";
 import { useAuth } from "../Hooks/useAuth";
@@ -31,6 +30,7 @@ export function Login() {
     userAttributes,
     sendEmailConfirmationCode,
     setStage,
+    allowRegistration,
   } = useAuth();
   const loginForm = useForm({
     initialValues: {
@@ -92,11 +92,11 @@ export function Login() {
           case "NotAuthorizedException": {
             loginForm.setFieldError(
               "email",
-              translation.validation.incorrect_user_or_password,
+              translation.validation.incorrectUserOrPassword,
             );
             loginForm.setFieldError(
               "password",
-              translation.validation.incorrect_user_or_password,
+              translation.validation.incorrectUserOrPassword,
             );
             break;
           }
@@ -175,141 +175,134 @@ export function Login() {
     <Paper withBorder shadow="md" p={30} mt={30} radius="md">
       {mfaRequired ? (
         <form onSubmit={mfaForm.onSubmit(onLogin)}>
-          <Stack>
-            <Box>
-              <InputLabel required>Multi-Factor Code</InputLabel>
-              <Center>
-                <PinInput
-                  oneTimeCode
-                  type="number"
-                  size="md"
-                  length={6}
-                  autoFocus={mfaRequired}
-                  onComplete={onLogin}
-                  {...mfaForm.getInputProps("totp")}
-                />
+          <Box>
+            <InputLabel required>Multi-Factor Code</InputLabel>
+            <Center>
+              <PinInput
+                oneTimeCode
+                type="number"
+                size="md"
+                length={6}
+                autoFocus={mfaRequired}
+                onComplete={onLogin}
+                {...mfaForm.getInputProps("totp")}
+              />
+            </Center>
+            <Text c="red" size="xs">
+              {mfaForm.errors.totp}
+            </Text>
+          </Box>
+          <Group justify="space-between" mt="lg">
+            <Anchor
+              onClick={() => {
+                mfaForm.reset();
+                setMfaRequired(false);
+                setStage("login");
+              }}
+              c="dimmed"
+              size="sm"
+            >
+              <Center inline>
+                <IconArrowLeft size={20} />
+                <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
-              <Text c="red" size="xs">
-                {mfaForm.errors.totp}
-              </Text>
-            </Box>
-            <Group justify="space-between">
-              <Anchor
-                onClick={() => {
-                  mfaForm.reset();
-                  setMfaRequired(false);
-                  setStage("login");
-                }}
-                c="dimmed"
-                size="sm"
-              >
-                <Center inline>
-                  <IconArrowLeft size={20} />
-                  <Text ml={5}>{translation.links.backToLogin}</Text>
-                </Center>
-              </Anchor>
-              <Button type="submit">{translation.buttons.code}</Button>
-            </Group>
-          </Stack>
+            </Anchor>
+            <Button type="submit">{translation.buttons.code}</Button>
+          </Group>
         </form>
       ) : verificationRequired ? (
         <form onSubmit={verificationForm.onSubmit(onVerification)}>
-          <Stack>
-            <Box>
-              <InputLabel required>Verification Code</InputLabel>
-              <Center>
-                <PinInput
-                  oneTimeCode
-                  type="number"
-                  size="md"
-                  length={6}
-                  autoFocus={verificationRequired}
-                  onComplete={onVerification}
-                  {...verificationForm.getInputProps("totp")}
-                />
+          <Box>
+            <InputLabel required>Verification Code</InputLabel>
+            <Center>
+              <PinInput
+                oneTimeCode
+                type="number"
+                size="md"
+                length={6}
+                autoFocus={verificationRequired}
+                onComplete={onVerification}
+                {...verificationForm.getInputProps("totp")}
+              />
+            </Center>
+            <Text c="red" size="xs">
+              {verificationForm.errors.totp}
+            </Text>
+          </Box>
+          <Group justify="space-between" mt="lg">
+            <Anchor
+              onClick={() => {
+                verificationForm.reset();
+                setVerificationRequired(false);
+                setStage("login");
+              }}
+              c="dimmed"
+              size="sm"
+            >
+              <Center inline>
+                <IconArrowLeft size={20} />
+                <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
-              <Text c="red" size="xs">
-                {verificationForm.errors.totp}
-              </Text>
-            </Box>
-            <Group justify="space-between">
-              <Anchor
-                onClick={() => {
-                  verificationForm.reset();
-                  setVerificationRequired(false);
-                  setStage("login");
-                }}
-                c="dimmed"
-                size="sm"
-              >
-                <Center inline>
-                  <IconArrowLeft size={20} />
-                  <Text ml={5}>{translation.links.backToLogin}</Text>
-                </Center>
-              </Anchor>
-              <Button type="submit">{translation.buttons.code}</Button>
-            </Group>
-          </Stack>
+            </Anchor>
+            <Button type="submit">{translation.buttons.code}</Button>
+          </Group>
         </form>
       ) : firstLogin ? (
         <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
-          <Stack>
-            <NewPasswordInput
-              label={translation.fields.newPassword}
-              placeholder={translation.placeholders.newPassword}
-              autoFocus={!!firstLogin}
-              withAsterisk
-              {...newPasswordForm.getInputProps("password")}
-            />
-            <Button type="submit" fullWidth>
-              {translation.buttons.newPassword}
-            </Button>
-          </Stack>
+          <NewPasswordInput
+            label={translation.fields.newPassword}
+            placeholder={translation.placeholders.newPassword}
+            autoFocus={!!firstLogin}
+            withAsterisk
+            showRequirements
+            {...newPasswordForm.getInputProps("password")}
+          />
+          <Button type="submit" fullWidth mt="lg">
+            {translation.buttons.newPassword}
+          </Button>
         </form>
       ) : (
         <form onSubmit={loginForm.onSubmit(onLogin)}>
-          <Stack>
-            <TextInput
-              label={translation.fields.email}
-              withAsterisk
-              placeholder={translation.placeholders.email}
-              {...loginForm.getInputProps("email")}
-            />
-            <PasswordInput
-              label={translation.fields.password}
-              placeholder={translation.placeholders.password}
-              {...loginForm.getInputProps("password")}
-              withAsterisk
-            />
-            <Group justify="space-between">
-              <div></div>
+          <TextInput
+            label={translation.fields.email}
+            withAsterisk
+            placeholder={translation.placeholders.email}
+            {...loginForm.getInputProps("email")}
+          />
+          <PasswordInput
+            label={translation.fields.password}
+            placeholder={translation.placeholders.password}
+            {...loginForm.getInputProps("password")}
+            withAsterisk
+            mt="md"
+          />
+          <Button type="submit" fullWidth mt="lg">
+            {translation.buttons.login}
+          </Button>
+          <Group justify="space-between" mt="md">
+            {allowRegistration && (
               <Anchor
                 component="button"
-                type="button"
+                c="dimmed"
                 size="sm"
-                onClick={() => {
-                  setStage("forgotPassword");
-                }}
-              >
-                {translation.links.forgotPassword}
-              </Anchor>
-            </Group>
-            <Group justify="space-between">
-              <Anchor
                 onClick={() => {
                   setStage("register");
                 }}
-                c="dimmed"
-                size="sm"
               >
-                <Center inline>
-                  <Text ml={5}>{translation.links.register}</Text>
-                  <IconArrowRight size={20} />
-                </Center>
+                {translation.links.register}
               </Anchor>
-              <Button type="submit">{translation.buttons.login}</Button>
-            </Group>
-          </Stack>
+            )}
+            <Anchor
+              component="button"
+              c="dimmed"
+              size="sm"
+              onClick={() => {
+                setStage("forgotPassword");
+              }}
+            >
+              {translation.links.forgotPassword}
+            </Anchor>
+          </Group>
         </form>
       )}
     </Paper>
