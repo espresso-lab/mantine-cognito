@@ -84,10 +84,7 @@ export function getCurrentUser() {
  * sign up
  */
 
-export function signUp(
-  email: string,
-  password: string,
-) {
+export function signUp(email: string, password: string) {
   return new Promise<ISignUpResult>((resolve, reject) =>
     getUserPool().signUp(
       email,
@@ -116,11 +113,7 @@ export function signUp(
  * sign in
  */
 
-export function signIn(
-  email: string,
-  password: string,
-  totp?: string,
-) {
+export function signIn(email: string, password: string, totp?: string) {
   return new Promise<CognitoUser>((resolve, reject) => {
     signOut();
     const cognitoUser = getCognitoUser(email);
@@ -196,8 +189,6 @@ export function getSession() {
     authenticatedUser: CognitoUser;
   }>((resolve, reject) => {
     const cognitoUser = getCurrentUser();
-    console.log("cognitoUser should be set", cognitoUser);
-
     if (cognitoUser === null) reject(null);
     cognitoUser?.getSession(
       (error: Error, session: CognitoUserSession | null) => {
@@ -283,10 +274,7 @@ export function getUserAttributes() {
  * confirm user registration
  */
 
-export function confirmSignUp(
-  email: string,
-  totp: string,
-) {
+export function confirmSignUp(email: string, totp: string) {
   return new Promise<void>((resolve, reject) => {
     const cognitoUser = getCognitoUser(email);
     cognitoUser?.confirmRegistration(totp, true, (error, data) => {
@@ -322,27 +310,23 @@ export function resendAccountConfirmationCode() {
  */
 
 export function resendEmailConfirmationCode() {
-  return authenticatedCall<string>(
-    (cognitoUser, resolve, reject) => {
-      cognitoUser.getAttributeVerificationCode("email", {
-        onSuccess: (data) => {
-          resolve(data);
-        },
-        onFailure: (error) => {
-          reject(error);
-        },
-      });
-    },
-  );
+  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
+    cognitoUser.getAttributeVerificationCode("email", {
+      onSuccess: (data) => {
+        resolve(data);
+      },
+      onFailure: (error) => {
+        reject(error);
+      },
+    });
+  });
 }
 
 /**
  * update user attribute
  */
 
-export function updateUserAttributes(
-  attributes: UserAttributes,
-) {
+export function updateUserAttributes(attributes: UserAttributes) {
   const attributeList = Object.keys(attributes).map(
     (attribute) =>
       new CognitoUserAttribute({
@@ -350,14 +334,12 @@ export function updateUserAttributes(
         Value: String(attributes[attribute]),
       }),
   );
-  return authenticatedCall<string>(
-    (cognitoUser, resolve, reject) => {
-      cognitoUser.updateAttributes(attributeList, (error, result) => {
-        if (error != null) return reject(error);
-        resolve(result ?? "User updated.");
-      });
-    },
-  );
+  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
+    cognitoUser.updateAttributes(attributeList, (error, result) => {
+      if (error != null) return reject(error);
+      resolve(result ?? "User updated.");
+    });
+  });
 }
 
 /**
@@ -388,7 +370,7 @@ export function confirmPasswordReset(
   password: string,
 ) {
   return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCognitoUser( email);
+    const cognitoUser = getCognitoUser(email);
     cognitoUser.confirmPassword(totp, password, {
       onSuccess: (success) => {
         resolve(success);
@@ -427,22 +409,17 @@ export function newPasswordChallenge(
  * verify user attribute
  */
 
-export function verifyUserAttribute(
-  attribute: string,
-  totp: string,
-) {
-  return authenticatedCall<string>(
-    (cognitoUser, resolve, reject) => {
-      cognitoUser.verifyAttribute(attribute, totp, {
-        onFailure(error) {
-          reject(error);
-        },
-        onSuccess(success) {
-          resolve(success);
-        },
-      });
-    },
-  );
+export function verifyUserAttribute(attribute: string, totp: string) {
+  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
+    cognitoUser.verifyAttribute(attribute, totp, {
+      onFailure(error) {
+        reject(error);
+      },
+      onSuccess(success) {
+        resolve(success);
+      },
+    });
+  });
 }
 
 /**
@@ -450,18 +427,16 @@ export function verifyUserAttribute(
  */
 
 export function associateSoftwareToken() {
-  return authenticatedCall<string>(
-    (cognitoUser, resolve, reject) => {
-      cognitoUser.associateSoftwareToken({
-        associateSecretCode: (secretCode) => {
-          resolve(secretCode);
-        },
-        onFailure: (error) => {
-          reject(error);
-        },
-      });
-    },
-  );
+  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
+    cognitoUser.associateSoftwareToken({
+      associateSecretCode: (secretCode) => {
+        resolve(secretCode);
+      },
+      onFailure: (error) => {
+        reject(error);
+      },
+    });
+  });
 }
 
 /**
@@ -483,10 +458,7 @@ export function getUserData() {
  * verify software token
  */
 
-export function verifySoftwareToken(
-  code: string,
-  deviceName: string,
-) {
+export function verifySoftwareToken(code: string, deviceName: string) {
   return authenticatedCall((cognitoUser, resolve, reject) => {
     cognitoUser.verifySoftwareToken(code, deviceName, {
       onSuccess: () => {
