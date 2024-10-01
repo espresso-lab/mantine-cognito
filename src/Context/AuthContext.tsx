@@ -1,22 +1,19 @@
 import {
-  CognitoUser, CognitoUserPool,
+  CognitoUser,
+  CognitoUserPool,
   CognitoUserSession,
   ISignUpResult,
 } from "amazon-cognito-identity-js";
 
-import {
-  createContext,
-  ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, ReactNode, useEffect, useState } from "react";
 
 import {
   confirmPasswordReset,
   confirmSignUp,
   getSession,
   getUserAttributes,
-  getUserGroups, initUserPool,
+  getUserGroups,
+  initUserPool,
   newPasswordChallenge,
   passwordReset,
   resendAccountConfirmationCode,
@@ -31,7 +28,7 @@ import {
 
 declare global {
   interface Window {
-    MantineCognitoUserPool: CognitoUserPool
+    MantineCognitoUserPool: CognitoUserPool;
   }
 }
 
@@ -76,12 +73,12 @@ export interface UpdateAttributesProps {
   userAttributes: UserAttributes;
 }
 
-type Mode = "login" | "register" | "forgotPassword";
+type Stage = "login" | "register" | "forgotPassword";
 
 type State = {
   allowRegistration: boolean;
-  setMode: (mode: Mode) => void;
-  mode: Mode;
+  setStage: (stage: Stage) => void;
+  stage: Stage;
   user: CognitoUser | null;
   userGroups: string[];
   userAttributes: UserAttributes | null;
@@ -122,16 +119,16 @@ const forgotPassword = ({ email }: ForgotPasswordProps) => {
   return passwordReset(email);
 };
 
-const confirmForgotPassword = ({ email, totp, password }: ConfirmForgotPasswordProps) => {
+const confirmForgotPassword = ({
+  email,
+  totp,
+  password,
+}: ConfirmForgotPasswordProps) => {
   return confirmPasswordReset(email, totp, password);
 };
 
 const login = async ({ email, password, totp }: LoginProps) => {
-  const cognitoUser = await signIn(
-      email,
-      password,
-      totp,
-  );
+  const cognitoUser = await signIn(email, password, totp);
 
   document.dispatchEvent(new Event("mantine-cognito-session"));
 
@@ -144,19 +141,22 @@ const logout = async () => {
   document.dispatchEvent(new Event("mantine-cognito-session"));
 };
 
-const forcedPasswordReset = async ({ cognitoUser, userAttributes, password, }: ForcedPasswordResetProps) => {
-  const res = await newPasswordChallenge(
-      cognitoUser,
-      userAttributes,
-      password,
-  );
+const forcedPasswordReset = async ({
+  cognitoUser,
+  userAttributes,
+  password,
+}: ForcedPasswordResetProps) => {
+  const res = await newPasswordChallenge(cognitoUser, userAttributes, password);
 
   document.dispatchEvent(new Event("mantine-cognito-session"));
 
   return res;
 };
 
-const verifyAttribute = async ({ userAttribute, totp }: VerifyAttributeProps) => {
+const verifyAttribute = async ({
+  userAttribute,
+  totp,
+}: VerifyAttributeProps) => {
   const res = await verifyUserAttribute(userAttribute, totp);
   document.dispatchEvent(new Event("mantine-cognito-session"));
 
@@ -178,18 +178,19 @@ const updateAttributes = async ({ userAttributes }: UpdateAttributesProps) => {
   return res;
 };
 
-
 export const AuthProvider = ({
   children,
   cognitoUserPoolId,
   cognitoClientId,
   allowRegistration,
 }: AuthProviderProps) => {
-  const [mode, setMode] = useState<State["mode"]>("login");
+  const [stage, setStage] = useState<State["stage"]>("login");
   const [user, setUser] = useState<State["user"]>(null);
-  const [userAttributes, setUserAttributes] = useState<State["userAttributes"]>(null);
+  const [userAttributes, setUserAttributes] =
+    useState<State["userAttributes"]>(null);
   const [userGroups, setUserGroups] = useState<State["userGroups"]>([]);
-  const [isSuperAdmin, setIsSuperAdmin] = useState<State["isSuperAdmin"]>(false);
+  const [isSuperAdmin, setIsSuperAdmin] =
+    useState<State["isSuperAdmin"]>(false);
 
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
@@ -211,7 +212,11 @@ export const AuthProvider = ({
 
   useEffect(() => {
     checkSession();
-    document.addEventListener("mantine-cognito-session", () => checkSession(), false);
+    document.addEventListener(
+      "mantine-cognito-session",
+      () => checkSession(),
+      false,
+    );
 
     // TODO: Remove event listener
     //return () => document.removeEventListener("mantine-cognito-session", ev, false);
@@ -221,22 +226,30 @@ export const AuthProvider = ({
     setIsSuperAdmin(userGroups.includes("SUPERADMIN"));
   }, [userGroups]);
 
-  return <AuthContext.Provider value={{allowRegistration,
-    mode,
-    setMode,
-    user,
-    userAttributes,
-    userGroups,
-    isSuperAdmin,
-    register,
-    login,
-    logout,
-    confirmRegistration,
-    forgotPassword,
-    confirmForgotPassword,
-    forcedPasswordReset,
-    verifyAttribute,
-    sendAccountConfirmationCode,
-    sendEmailConfirmationCode,
-    updateAttributes}}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        allowRegistration,
+        stage,
+        setStage,
+        user,
+        userAttributes,
+        userGroups,
+        isSuperAdmin,
+        register,
+        login,
+        logout,
+        confirmRegistration,
+        forgotPassword,
+        confirmForgotPassword,
+        forcedPasswordReset,
+        verifyAttribute,
+        sendAccountConfirmationCode,
+        sendEmailConfirmationCode,
+        updateAttributes,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -117,7 +117,6 @@ export function signIn(email: string, password: string, totp?: string) {
   return new Promise<CognitoUser>((resolve, reject) => {
     signOut();
     const cognitoUser = getCognitoUser(email);
-    console.log("signIn cognitoUser", cognitoUser);
 
     cognitoUser.authenticateUser(
       new AuthenticationDetails({
@@ -126,11 +125,9 @@ export function signIn(email: string, password: string, totp?: string) {
       }),
       {
         onSuccess: () => {
-          console.log("onSuccess authenticateUser");
           resolve(cognitoUser);
         },
         onFailure: (error) => {
-          console.log("onFair authenticateUser");
           reject(error);
         },
         newPasswordRequired: (userAttributes) => {
