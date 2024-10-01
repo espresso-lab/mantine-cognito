@@ -10,6 +10,11 @@ on:
       - main
       - test
 
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
 jobs:
   test:
     name: Test puppeteer
