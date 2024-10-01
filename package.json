@@ -2,7 +2,7 @@
   "name": "@espresso-lab/mantine-cognito",
   "private": false,
   "description": "Mantine UI components with AWS Cognito",
-  "version": "0.0.18",
+  "version": "0.0.0-development",
   "type": "module",
   "main": "dist/index.umd.js",
   "module": "dist/index.es.js",
