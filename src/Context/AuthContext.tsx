@@ -3,14 +3,14 @@ import {
   CognitoUserSession,
   ISignUpResult,
 } from "amazon-cognito-identity-js";
+
 import {
   createContext,
   ReactNode,
-  useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
+
 import {
   confirmPasswordReset,
   confirmSignUp,
@@ -31,10 +31,6 @@ import {
 
 declare global {
   interface Window {
-    MantineCognito: {
-      cognitoUserPoolId: string,
-      cognitoClientId: string
-    },
     MantineCognitoUserPool: CognitoUserPool
   }
 }
@@ -62,7 +58,6 @@ export interface ConfirmForgotPasswordProps {
 export interface LoginProps {
   email: string;
   password: string;
-  remember?: boolean;
   totp?: string;
 }
 
@@ -115,6 +110,75 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const register = ({ email, password }: RegisterProps) => {
+  return signUp(email, password);
+};
+
+const confirmRegistration = ({ email, totp }: ConfirmRegistrationProps) => {
+  return confirmSignUp(email, totp);
+};
+
+const forgotPassword = ({ email }: ForgotPasswordProps) => {
+  return passwordReset(email);
+};
+
+const confirmForgotPassword = ({ email, totp, password }: ConfirmForgotPasswordProps) => {
+  return confirmPasswordReset(email, totp, password);
+};
+
+const login = async ({ email, password, totp }: LoginProps) => {
+  const cognitoUser = await signIn(
+      email,
+      password,
+      totp,
+  );
+
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+
+  return cognitoUser;
+};
+
+const logout = async () => {
+  signOut();
+
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+};
+
+const forcedPasswordReset = async ({ cognitoUser, userAttributes, password, }: ForcedPasswordResetProps) => {
+  const res = await newPasswordChallenge(
+      cognitoUser,
+      userAttributes,
+      password,
+  );
+
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+
+  return res;
+};
+
+const verifyAttribute = async ({ userAttribute, totp }: VerifyAttributeProps) => {
+  const res = await verifyUserAttribute(userAttribute, totp);
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+
+  return res;
+};
+
+const sendAccountConfirmationCode = () => {
+  return resendAccountConfirmationCode();
+};
+
+const sendEmailConfirmationCode = () => {
+  return resendEmailConfirmationCode();
+};
+
+const updateAttributes = async ({ userAttributes }: UpdateAttributesProps) => {
+  const res = await updateUserAttributes(userAttributes);
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+
+  return res;
+};
+
+
 export const AuthProvider = ({
   children,
   cognitoUserPoolId,
@@ -123,11 +187,9 @@ export const AuthProvider = ({
 }: AuthProviderProps) => {
   const [mode, setMode] = useState<State["mode"]>("login");
   const [user, setUser] = useState<State["user"]>(null);
-  const [userAttributes, setUserAttributes] =
-    useState<State["userAttributes"]>(null);
+  const [userAttributes, setUserAttributes] = useState<State["userAttributes"]>(null);
   const [userGroups, setUserGroups] = useState<State["userGroups"]>([]);
-  const [isSuperAdmin, setIsSuperAdmin] =
-    useState<State["isSuperAdmin"]>(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<State["isSuperAdmin"]>(false);
 
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
@@ -149,139 +211,32 @@ export const AuthProvider = ({
 
   useEffect(() => {
     checkSession();
+    document.addEventListener("mantine-cognito-session", () => checkSession(), false);
+
+    // TODO: Remove event listener
+    //return () => document.removeEventListener("mantine-cognito-session", ev, false);
   }, []);
 
   useEffect(() => {
     setIsSuperAdmin(userGroups.includes("SUPERADMIN"));
   }, [userGroups]);
 
-  const register = useCallback(({ email, password }: RegisterProps) => {
-    return signUp(email, password);
-  }, []);
-
-  const confirmRegistration = useCallback(
-    ({ email, totp }: ConfirmRegistrationProps) => {
-      return confirmSignUp(email, totp);
-    },
-    [],
-  );
-
-  const forgotPassword = useCallback(({ email }: ForgotPasswordProps) => {
-    return passwordReset(email);
-  }, []);
-
-  const confirmForgotPassword = useCallback(
-    ({ email, totp, password }: ConfirmForgotPasswordProps) => {
-      return confirmPasswordReset(email, totp, password);
-    },
-    [],
-  );
-
-  const login = useCallback(
-    async ({ email, password, remember, totp }: LoginProps) => {
-      const cognitoUser = await signIn(
-        email,
-        password,
-        remember,
-        totp,
-      );
-      await checkSession();
-      return cognitoUser;
-    },
-    [],
-  );
-
-  const logout = useCallback(async () => {
-    signOut();
-    await checkSession();
-    window.location.reload();
-  }, []);
-
-  const forcedPasswordReset = useCallback(
-    async ({
-      cognitoUser,
-      userAttributes,
-      password,
-    }: ForcedPasswordResetProps) => {
-      const res = await newPasswordChallenge(
-        cognitoUser,
-        userAttributes,
-        password,
-      );
-      await checkSession();
-      return res;
-    },
-    [],
-  );
-
-  const verifyAttribute = useCallback(
-    async ({ userAttribute, totp }: VerifyAttributeProps) => {
-      const res = await verifyUserAttribute(userAttribute, totp);
-      await checkSession();
-      return res;
-    },
-    [],
-  );
-
-  const sendAccountConfirmationCode = useCallback(() => {
-    return resendAccountConfirmationCode();
-  }, []);
-
-  const sendEmailConfirmationCode = useCallback(() => {
-    return resendEmailConfirmationCode();
-  }, []);
-
-  const updateAttributes = useCallback(
-    async ({ userAttributes }: UpdateAttributesProps) => {
-      const res = await updateUserAttributes(userAttributes);
-      await checkSession();
-      return res;
-    },
-    [],
-  );
-
-  const values = useMemo(
-    () => ({
-      allowRegistration,
-      mode,
-      setMode,
-      user,
-      userAttributes,
-      userGroups,
-      isSuperAdmin,
-      register,
-      login,
-      logout,
-      confirmRegistration,
-      forgotPassword,
-      confirmForgotPassword,
-      forcedPasswordReset,
-      verifyAttribute,
-      sendAccountConfirmationCode,
-      sendEmailConfirmationCode,
-      updateAttributes,
-    }),
-    [
-      allowRegistration,
-      mode,
-      setMode,
-      user,
-      userAttributes,
-      userGroups,
-      isSuperAdmin,
-      register,
-      login,
-      logout,
-      confirmRegistration,
-      forgotPassword,
-      confirmForgotPassword,
-      forcedPasswordReset,
-      verifyAttribute,
-      sendAccountConfirmationCode,
-      sendEmailConfirmationCode,
-      updateAttributes,
-    ],
-  );
-
-  return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{allowRegistration,
+    mode,
+    setMode,
+    user,
+    userAttributes,
+    userGroups,
+    isSuperAdmin,
+    register,
+    login,
+    logout,
+    confirmRegistration,
+    forgotPassword,
+    confirmForgotPassword,
+    forcedPasswordReset,
+    verifyAttribute,
+    sendAccountConfirmationCode,
+    sendEmailConfirmationCode,
+    updateAttributes}}>{children}</AuthContext.Provider>;
 };

@@ -4,7 +4,6 @@ import {
   CognitoUserAttribute,
   CognitoUserPool,
   CognitoUserSession,
-  CookieStorage,
   ISignUpResult,
   UserData,
 } from "amazon-cognito-identity-js";
@@ -42,25 +41,23 @@ export class NewPasswordRequiredException extends Error {
 /**
  * get cognito user pool
  */
-
 interface UserPoolAttributes {
   cognitoUserPoolId: string;
   cognitoClientId: string;
 }
 
-export function initUserPool(poolProps: UserPoolAttributes, remember: boolean = false) {
+export function initUserPool(poolProps: UserPoolAttributes) {
   window.MantineCognitoUserPool = new CognitoUserPool({
     UserPoolId: poolProps.cognitoUserPoolId,
     ClientId: poolProps.cognitoClientId,
-    Storage: remember
-        ? new CookieStorage({ domain: `.${window.location.hostname}` })
-        : window.sessionStorage,
   });
-
-  return window.MantineCognitoUserPool;
 }
 
 function getUserPool() {
+  if (!window.MantineCognitoUserPool) {
+    throw new Error("Cognito Userpool has not been initialized.");
+  }
+
   return window.MantineCognitoUserPool;
 }
 
@@ -68,16 +65,10 @@ function getUserPool() {
  * get cognito user
  */
 
-function getCognitoUser(
-  email: string,
-  remember: boolean = false,
-) {
+function getCognitoUser(email: string) {
   return new CognitoUser({
     Username: email,
     Pool: getUserPool(),
-    Storage: remember
-      ? new CookieStorage({ domain: `.${window.location.hostname}` })
-      : window.sessionStorage,
   });
 }
 
@@ -86,10 +77,7 @@ function getCognitoUser(
  */
 
 export function getCurrentUser() {
-  const sessionUser = getUserPool().getCurrentUser();
-  return sessionUser !== null
-    ? sessionUser
-    : getUserPool().getCurrentUser();
+  return getUserPool().getCurrentUser();
 }
 
 /**
@@ -131,12 +119,13 @@ export function signUp(
 export function signIn(
   email: string,
   password: string,
-  remember: boolean = false,
   totp?: string,
 ) {
   return new Promise<CognitoUser>((resolve, reject) => {
     signOut();
-    const cognitoUser = getCognitoUser(email, remember);
+    const cognitoUser = getCognitoUser(email);
+    console.log("signIn cognitoUser", cognitoUser);
+
     cognitoUser.authenticateUser(
       new AuthenticationDetails({
         Username: email,
@@ -144,9 +133,11 @@ export function signIn(
       }),
       {
         onSuccess: () => {
+          console.log("onSuccess authenticateUser");
           resolve(cognitoUser);
         },
         onFailure: (error) => {
+          console.log("onFair authenticateUser");
           reject(error);
         },
         newPasswordRequired: (userAttributes) => {
@@ -205,6 +196,8 @@ export function getSession() {
     authenticatedUser: CognitoUser;
   }>((resolve, reject) => {
     const cognitoUser = getCurrentUser();
+    console.log("cognitoUser should be set", cognitoUser);
+
     if (cognitoUser === null) reject(null);
     cognitoUser?.getSession(
       (error: Error, session: CognitoUserSession | null) => {

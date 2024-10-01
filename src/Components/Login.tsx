@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Center,
-  Checkbox,
   Group,
   InputLabel,
   Paper,
@@ -37,7 +36,6 @@ export function Login() {
     initialValues: {
       email: "",
       password: "",
-      remember: true,
     },
     validate: {
       email: isEmail(translation.validation.email),
@@ -278,10 +276,7 @@ export function Login() {
               withAsterisk
             />
             <Group justify="space-between">
-              <Checkbox
-                label={translation.fields.remember}
-                {...loginForm.getInputProps("remember")}
-              />
+              <div></div>
               <Anchor
                 component="button"
                 type="button"

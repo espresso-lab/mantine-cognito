@@ -2,7 +2,6 @@ export const translation = {
   fields: {
     email: "E-Mail",
     password: "Passwort",
-    remember: "Angemeldet bleiben",
     newPassword: "Neues Passwort",
   },
   placeholders: {
