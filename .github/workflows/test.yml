@@ -22,7 +22,8 @@ jobs:
         uses: tj-actions/puppeteer@v5
         id: puppeteer
         with:
-          files: tests/test.js  # The test generates a test.pdf file in the home directory the steps below are used to verify the contents of the pdf file.
+          files: tests/test.js
+          # The test generates a test.pdf file in the home directory the steps below are used to verify the contents of the pdf file.
           # Send exit(1) to fail
 
 #      - name: Copy test output
