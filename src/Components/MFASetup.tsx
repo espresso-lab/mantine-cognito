@@ -21,14 +21,12 @@ import {
   disableMFA,
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
-import { useAuth } from "../Hooks/useAuth";
 
 export interface MFASetupProps {
   mfaAppName: string;
 }
 
 export function MFASetup({ mfaAppName }: MFASetupProps) {
-  const { poolProps } = useAuth();
   const clipboard = useClipboard();
   const [mode, setMode] = useState<"disabled" | "enabling" | "enabled">(
     "disabled",
@@ -48,7 +46,7 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
   });
 
   useEffect(() => {
-    getUserData(poolProps)
+    getUserData()
       .then((data) => {
         if (data == null) return console.error("No user data in MFASetup.");
         if (data.PreferredMfaSetting === "SOFTWARE_TOKEN_MFA")
@@ -71,9 +69,9 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
       !form.errors.totp
     ) {
       // No errors and full length, try the code
-      verifySoftwareToken(poolProps, form.values.totp, form.values.deviceName)
+      verifySoftwareToken(form.values.totp, form.values.deviceName)
         .then(() => {
-          enableMFA(poolProps)
+          enableMFA()
             .then(() => {
               setMode("enabled");
             })
@@ -90,7 +88,7 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
 
   const onStartEnable = () => {
     form.setFieldValue("totp", "");
-    associateSoftwareToken(poolProps)
+    associateSoftwareToken()
       .then((code) => {
         setCode(code);
         setMode("enabling");
@@ -101,7 +99,7 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
   };
 
   const onDisable = () => {
-    disableMFA(poolProps)
+    disableMFA()
       .then(() => {
         setMode("disabled");
       })

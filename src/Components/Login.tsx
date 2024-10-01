@@ -30,7 +30,7 @@ export function Login() {
     forcedPasswordReset,
     userAttributes,
     sendEmailConfirmationCode,
-    setMode,
+    setStage,
   } = useAuth();
   const loginForm = useForm({
     initialValues: {
@@ -90,8 +90,14 @@ export function Login() {
             break;
           }
           case "NotAuthorizedException": {
-            loginForm.setFieldError("email", translation.validation.incorrect_user_or_password);
-            loginForm.setFieldError("password", translation.validation.incorrect_user_or_password);
+            loginForm.setFieldError(
+              "email",
+              translation.validation.incorrect_user_or_password,
+            );
+            loginForm.setFieldError(
+              "password",
+              translation.validation.incorrect_user_or_password,
+            );
             break;
           }
           case "CodeMismatchException": {
@@ -156,7 +162,7 @@ export function Login() {
       if (!userAttributes?.email_verified) {
         sendEmailConfirmationCode();
       }
-      setMode("login");
+      setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
         console.error(reason);
@@ -192,7 +198,7 @@ export function Login() {
                 onClick={() => {
                   mfaForm.reset();
                   setMfaRequired(false);
-                  setMode("login");
+                  setStage("login");
                 }}
                 c="dimmed"
                 size="sm"
@@ -231,7 +237,7 @@ export function Login() {
                 onClick={() => {
                   verificationForm.reset();
                   setVerificationRequired(false);
-                  setMode("login");
+                  setStage("login");
                 }}
                 c="dimmed"
                 size="sm"
@@ -282,7 +288,7 @@ export function Login() {
                 type="button"
                 size="sm"
                 onClick={() => {
-                  setMode("forgotPassword");
+                  setStage("forgotPassword");
                 }}
               >
                 {translation.links.forgotPassword}
@@ -291,7 +297,7 @@ export function Login() {
             <Group justify="space-between">
               <Anchor
                 onClick={() => {
-                  setMode("register");
+                  setStage("register");
                 }}
                 c="dimmed"
                 size="sm"

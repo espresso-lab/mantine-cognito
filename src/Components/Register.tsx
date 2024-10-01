@@ -15,7 +15,7 @@ import { NewPasswordInput } from "./NewPasswordInput";
 import { translation } from "../translation";
 
 export function Register() {
-  const { register, user, setMode } = useAuth();
+  const { register, user, setStage } = useAuth();
   const form = useForm({
     initialValues: {
       email: "",
@@ -30,7 +30,7 @@ export function Register() {
   async function onSubmit() {
     try {
       await register(form.values);
-      setMode("login");
+      setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
         switch (reason.name) {
@@ -51,7 +51,7 @@ export function Register() {
   }
 
   if (user) {
-    setMode("login");
+    setStage("login");
   }
 
   return (
@@ -77,7 +77,7 @@ export function Register() {
             <Anchor
               onClick={() => {
                 form.reset();
-                setMode("login");
+                setStage("login");
               }}
               c="dimmed"
               size="sm"
