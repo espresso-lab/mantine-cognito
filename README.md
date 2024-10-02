@@ -7,7 +7,7 @@ This is a simple wrapper for the [Mantine UI](https://mantine.dev/) library to w
 [![NPM Downloads](https://img.shields.io/npm/d18m/@espresso-lab/mantine-cognito.svg?style=flat)]()
 
 
-![image](https://raw.githubusercontent.com/espresso-lab/mantine-cognito/refs/heads/main/docs/screenshots.png)
+![image](https://raw.githubusercontent.com/espresso-lab/mantine-cognito/refs/heads/main/docs/screenshot.png)
 
 ## Installation
 
