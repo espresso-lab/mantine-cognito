@@ -1,4 +1,3 @@
-import React from "react";
 import { Button, MantineProvider, Text } from "@mantine/core";
 import { MantineAuth } from "./Components/MantineAuth";
 import { MFASetup } from "./Components/MFASetup";

@@ -11,9 +11,10 @@ import { useForm, isEmail, isNotEmpty } from "@mantine/form";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
-import { translation } from "../translation";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Register() {
+  const translation = useTranslation();
   const { register, user, setStage } = useAuth();
   const form = useForm({
     initialValues: {

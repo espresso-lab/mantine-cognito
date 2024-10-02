@@ -17,9 +17,10 @@ import { useState } from "react";
 import { FirstLogin, NewPasswordRequiredException } from "../Context/cognito";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
-import { translation } from "../translation";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Login() {
+  const translation = useTranslation();
   const [mfaRequired, setMfaRequired] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
   const [firstLogin, setFirstLogin] = useState<FirstLogin>();

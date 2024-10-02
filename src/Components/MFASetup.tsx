@@ -21,13 +21,14 @@ import {
   disableMFA,
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
-import { translation } from "../translation";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export interface MFASetupProps {
   mfaAppName: string;
 }
 
 export function MFASetup({ mfaAppName }: MFASetupProps) {
+    const translation = useTranslation();
   const clipboard = useClipboard();
   const [mode, setMode] = useState<"disabled" | "enabling" | "enabled">(
     "disabled",

@@ -9,9 +9,8 @@ import {
 } from "@mantine/core";
 import { useInputState } from "@mantine/hooks";
 import { IconCheck, IconX } from "@tabler/icons-react";
-
 import type { PasswordInputProps } from "@mantine/core";
-import { translation } from "../translation";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 type NewPasswordInputProps = PasswordInputProps & {
   showRequirements?: boolean;
@@ -24,6 +23,7 @@ const PasswordRequirement = ({
   meets: boolean;
   label: string;
 }) => {
+
   return (
     <Center>
       {meets ? (
@@ -38,18 +38,8 @@ const PasswordRequirement = ({
   );
 };
 
-const requirements = [
-  { re: /^.{8,}$/, label: translation.passwortRequirements.min },
-  { re: /[0-9]/, label: translation.passwortRequirements.number },
-  { re: /[a-z]/, label: translation.passwortRequirements.lowercase },
-  { re: /[A-Z]/, label: translation.passwortRequirements.uppercase },
-  {
-    re: /[$&+,:;=?@#|'<>.^*()%!-]/,
-    label: translation.passwortRequirements.special,
-  },
-];
 
-const getStrength = (password: NewPasswordInputProps["value"]) => {
+const getStrength = (password: NewPasswordInputProps["value"], requirements:  { re: RegExp, label: string }[]) => {
   if (password === undefined) return 0;
 
   const value = password.toString();
@@ -66,13 +56,29 @@ const getStrength = (password: NewPasswordInputProps["value"]) => {
 
 export function NewPasswordInput(props: NewPasswordInputProps) {
   const [value, setValue] = useInputState(props.value);
-  const strength = getStrength(value);
+
   const valueString = value === undefined ? "" : value.toString();
+
+  const translation = useTranslation();
+  const requirements = [
+    { re: /^.{8,}$/, label: translation.passwordRequirements.min },
+    { re: /[0-9]/, label: translation.passwordRequirements.number },
+    { re: /[a-z]/, label: translation.passwordRequirements.lowercase },
+    { re: /[A-Z]/, label: translation.passwordRequirements.uppercase },
+    {
+      re: /[$&+,:;=?@#|'<>.^*()%!-]/,
+      label: translation.passwordRequirements.special,
+    },
+  ];
+
+  const strength = getStrength(value, requirements);
+
 
   const onChange: NewPasswordInputProps["onChange"] = (event) => {
     setValue(event.currentTarget.value);
     props.onChange?.(event);
   };
+
 
   const checks = requirements.map((requirement, index) => (
     <PasswordRequirement

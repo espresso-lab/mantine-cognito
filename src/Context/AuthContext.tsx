@@ -96,14 +96,18 @@ type State = {
   sendEmailConfirmationCode: () => Promise<string>;
   login: (props: LoginProps) => Promise<CognitoUser>;
   logout: () => void;
+  language: Language;
 };
 
 export const AuthContext = createContext<State | undefined>(undefined);
+
+export type Language = "en" | "de";
 
 interface AuthProviderProps {
   cognitoUserPoolId: string;
   cognitoClientId: string;
   allowRegistration: boolean;
+  language: Language;
   children: ReactNode;
 }
 
@@ -183,6 +187,7 @@ export const AuthProvider = ({
   cognitoUserPoolId,
   cognitoClientId,
   allowRegistration,
+    language
 }: AuthProviderProps) => {
   const [stage, setStage] = useState<State["stage"]>("login");
   const [user, setUser] = useState<State["user"]>(null);
@@ -247,6 +252,7 @@ export const AuthProvider = ({
         sendAccountConfirmationCode,
         sendEmailConfirmationCode,
         updateAttributes,
+        language
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-export const translation = {
+export default {
   title: {
     login: "Anmelden",
     register: "Registrieren",
@@ -51,7 +51,7 @@ export const translation = {
     code: "Code ist ungültig",
     incorrectUserOrPassword: "E-Mail-Adresse oder Passwort falsch.",
   },
-  passwortRequirements: {
+  passwordRequirements: {
     min: "Mindestens 8 Zeichen",
     uppercase: "Mindestens ein Großbuchstabe",
     lowercase: "Mindestens ein Kleinbuchstabe",

@@ -3,7 +3,7 @@ import { useAuth } from "../Hooks/useAuth";
 import { Login } from "./Login";
 import { Register } from "./Register";
 import { ForgotPassword } from "./ForgotPassword";
-import { translation } from "../translation";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -11,6 +11,8 @@ interface AuthWrapperProps {
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
   const { user, stage } = useAuth();
+  const translation = useTranslation();
+
   return user ? (
     children
   ) : (

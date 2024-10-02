@@ -1,4 +1,4 @@
-import { AuthProvider } from "../Context/AuthContext";
+import { AuthProvider, Language } from "../Context/AuthContext";
 import { AuthWrapper } from "./AuthWrapper";
 
 interface MantineAuthProps {
@@ -6,6 +6,7 @@ interface MantineAuthProps {
   cognitoClientId: string;
   allowRegistration?: boolean;
   children: React.ReactNode;
+  language?: Language;
 }
 
 export function MantineAuth({
@@ -13,10 +14,11 @@ export function MantineAuth({
   cognitoClientId,
   allowRegistration = true,
   children,
+  language = 'en'
 }: MantineAuthProps) {
   return (
     <AuthProvider
-      {...{ cognitoUserPoolId, cognitoClientId, allowRegistration }}
+      {...{ cognitoUserPoolId, cognitoClientId, allowRegistration, language }}
     >
       <AuthWrapper>{children}</AuthWrapper>
     </AuthProvider>
