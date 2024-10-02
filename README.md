@@ -3,8 +3,8 @@
 This is a simple wrapper for the [Mantine UI](https://mantine.dev/) library to work with [AWS Cognito](https://aws.amazon.com/cognito/).
 
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
-[![NPM Version](https://img.shields.io/npm/v/@espresso-lab/mantine-cognito.svg?style=flat)]()
-[![NPM Downloads](https://img.shields.io/npm/d18m/@espresso-lab/mantine-cognito.svg?style=flat)]()
+[![NPM Version](https://img.shields.io/npm/v/@espresso-lab/mantine-cognito.svg?style=flat)](https://www.npmjs.com/package/@espresso-lab/mantine-cognito)
+[![NPM Downloads](https://img.shields.io/npm/d18m/@espresso-lab/mantine-cognito.svg?style=flat)](https://www.npmjs.com/package/@espresso-lab/mantine-cognito)
 
 
 ![image](https://raw.githubusercontent.com/espresso-lab/mantine-cognito/refs/heads/main/docs/screenshot.png)
