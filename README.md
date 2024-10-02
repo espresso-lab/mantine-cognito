@@ -22,6 +22,7 @@ function App() {
     <MantineAuth
       cognitoUserPoolId="<cognito-user-pool-id>"
       cognitoClientId="<cognito-client-id>"
+      language="en"
     >
       <p>You are logged in!</p>
       <MFASetup mfaAppName="Test" />
