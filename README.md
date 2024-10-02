@@ -1,4 +1,4 @@
-# Mantine UI Wrapper for AWS Cognito
+# Mantine meets AWS Cognito 🚀
 
 This is a simple wrapper for the [Mantine UI](https://mantine.dev/) library to work with [AWS Cognito](https://aws.amazon.com/cognito/).
 
