@@ -385,20 +385,21 @@ export function confirmPasswordReset(
 
 export function newPasswordChallenge(
   cognitoUser: CognitoUser,
-  userAttributes: UserAttributes,
   password: string,
 ) {
   return new Promise<CognitoUserSession>((resolve, reject) => {
-    delete userAttributes.email;
-    delete userAttributes.email_verified;
-    cognitoUser.completeNewPasswordChallenge(password, userAttributes, {
-      onSuccess: (data) => {
-        resolve(data);
+    cognitoUser.completeNewPasswordChallenge(
+      password,
+      {},
+      {
+        onSuccess: (data) => {
+          resolve(data);
+        },
+        onFailure: (error) => {
+          reject(error);
+        },
       },
-      onFailure: (error) => {
-        reject(error);
-      },
-    });
+    );
   });
 }
 
