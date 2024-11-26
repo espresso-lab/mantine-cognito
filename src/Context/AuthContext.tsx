@@ -5,7 +5,7 @@ import {
   ISignUpResult,
 } from "amazon-cognito-identity-js";
 
-import { createContext, ReactNode, useEffect, useState } from "react";
+import { createContext, ReactNode, useEffect } from "react";
 
 import {
   confirmPasswordReset,
@@ -25,6 +25,7 @@ import {
   UserAttributes,
   verifyUserAttribute,
 } from "./cognito";
+import usePersistentState from "../Hooks/usePersitentState.ts";
 
 declare global {
   interface Window {
@@ -189,13 +190,11 @@ export const AuthProvider = ({
   allowRegistration,
     language
 }: AuthProviderProps) => {
-  const [stage, setStage] = useState<State["stage"]>("login");
-  const [user, setUser] = useState<State["user"]>(null);
-  const [userAttributes, setUserAttributes] =
-    useState<State["userAttributes"]>(null);
-  const [userGroups, setUserGroups] = useState<State["userGroups"]>([]);
-  const [isSuperAdmin, setIsSuperAdmin] =
-    useState<State["isSuperAdmin"]>(false);
+  const [stage, setStage] = usePersistentState<State["stage"]>("login", "login-state");
+  const [user, setUser] = usePersistentState<State["user"]>(null, "user-state");
+  const [userAttributes, setUserAttributes] = usePersistentState<State["userAttributes"]>(null, "user-attr-state");
+  const [userGroups, setUserGroups] = usePersistentState<State["userGroups"]>([], "user-group-state");
+  const [isSuperAdmin, setIsSuperAdmin] = usePersistentState<State["isSuperAdmin"]>(false, "super-admin-state");
 
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
@@ -228,7 +227,7 @@ export const AuthProvider = ({
   }, []);
 
   useEffect(() => {
-    setIsSuperAdmin(userGroups.includes("SUPERADMIN"));
+    setIsSuperAdmin(userGroups.includes("SUPERADMIN") || userGroups.includes("SUPER_ADMIN"));
   }, [userGroups]);
 
   return (
