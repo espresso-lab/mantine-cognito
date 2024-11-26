@@ -5,7 +5,7 @@ import {
   ISignUpResult,
 } from "amazon-cognito-identity-js";
 
-import { createContext, ReactNode, useEffect } from "react";
+import {createContext, ReactNode, useEffect} from "react";
 
 import {
   confirmPasswordReset,
@@ -77,13 +77,12 @@ export interface UpdateAttributesProps {
 type Stage = "login" | "register" | "forgotPassword";
 
 type State = {
+  getUser:  () => Promise<CognitoUser | null>;
   allowRegistration: boolean;
   setStage: (stage: Stage) => void;
   stage: Stage;
-  user: CognitoUser | null;
   userGroups: string[];
   userAttributes: UserAttributes | null;
-  isSuperAdmin: boolean;
   register: (props: RegisterProps) => Promise<ISignUpResult>;
   confirmRegistration: (props: ConfirmRegistrationProps) => Promise<void>;
   forgotPassword: (props: ForgotPasswordProps) => Promise<void>;
@@ -189,45 +188,51 @@ export const AuthProvider = ({
   allowRegistration,
   language,
 }: AuthProviderProps) => {
-  const [stage, setStage] = usePersistentState<State["stage"]>("login", "login-state");
-  const [user, setUser] = usePersistentState<State["user"]>(null, "user-state");
-  const [userAttributes, setUserAttributes] = usePersistentState<State["userAttributes"]>(null, "user-attr-state");
-  const [userGroups, setUserGroups] = usePersistentState<State["userGroups"]>([], "user-group-state");
-  const [isSuperAdmin, setIsSuperAdmin] = usePersistentState<State["isSuperAdmin"]>(false, "super-admin-state");
-
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
-  async function checkSession() {
-    getSession()
-      .then(async ({ authenticatedUser, session }) => {
-        if (session.isValid()) {
-          setUser(authenticatedUser);
-          setUserAttributes(await getUserAttributes());
-          setUserGroups(await getUserGroups());
-        } else {
-          setUser(null);
-        }
-      })
-      .catch(() => {
-        setUser(null);
-      });
-  }
+  const [stage, setStage] = usePersistentState<State["stage"]>("login", "login-state");
+  const [userAttributes, setUserAttributes] = usePersistentState<State["userAttributes"]>(null, "user-attr-state");
+  const [userGroups, setUserGroups] = usePersistentState<State["userGroups"]>([], "user-group-state");
+
+  const getUser = async () => {
+    return getSession()
+        .then(async ({ authenticatedUser }) => {
+          return authenticatedUser;
+        })
+        .catch(() => {
+          return null;
+        });
+  };
 
   useEffect(() => {
-    checkSession();
-    document.addEventListener(
-      "mantine-cognito-session",
-      () => checkSession(),
-      false,
-    );
-
-    // TODO: Remove event listener
-    //return () => document.removeEventListener("mantine-cognito-session", ev, false);
+    getSession()
+        .then(async () => {
+          // setAuthenticatedUser(authenticatedUser);
+              getUserAttributes().then(data => setUserAttributes(data));
+              getUserGroups().then(data => setUserGroups(data));
+        })
+        .catch(() => {
+          setUserAttributes(null);
+          setUserGroups([]);
+        });
   }, []);
 
+  // Handling event listener
   useEffect(() => {
-    setIsSuperAdmin(userGroups.includes("SUPERADMIN") || userGroups.includes("SUPER_ADMIN"));
-  }, [userGroups]);
+    const evFunction = () => getSession()
+        .then(async () => {
+          getUserAttributes().then(data => setUserAttributes(data));
+          getUserGroups().then(data => setUserGroups(data));
+        })
+        .catch(() => {
+          setUserAttributes(null);
+          setUserGroups([]);
+        });
+
+    document.addEventListener("mantine-cognito-session", evFunction, false);
+
+    return () => document.removeEventListener("mantine-cognito-session", evFunction, false);
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -235,10 +240,9 @@ export const AuthProvider = ({
         allowRegistration,
         stage,
         setStage,
-        user,
+        getUser,
         userAttributes,
         userGroups,
-        isSuperAdmin,
         register,
         login,
         logout,

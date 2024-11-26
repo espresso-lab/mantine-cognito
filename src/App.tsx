@@ -7,8 +7,8 @@ function App() {
   return (
     <MantineProvider>
       <MantineAuth
-        cognitoUserPoolId="eu-central-1_zkn7FzwJc"
-        cognitoClientId="7o7ohldbtts5tj8ual0d2sb8kv"
+        cognitoUserPoolId="eu-central-1_hTk8B9TeZ"
+        cognitoClientId="4f8lepkmgdmin6vein41gbhfh9"
         allowRegistration={true}
       >
         <SecureContent />
@@ -20,6 +20,8 @@ function App() {
 function SecureContent() {
   const { logout, userAttributes } = useAuth();
   const { email } = userAttributes || {};
+
+  console.log("userAttributes", userAttributes);
 
   return (
     <>

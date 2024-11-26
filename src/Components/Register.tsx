@@ -15,7 +15,7 @@ import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Register() {
   const translation = useTranslation();
-  const { register, user, setStage } = useAuth();
+  const { register, userAttributes, setStage } = useAuth();
   const form = useForm({
     initialValues: {
       email: "",
@@ -50,7 +50,7 @@ export function Register() {
     }
   }
 
-  if (user) {
+  if (userAttributes) {
     setStage("login");
   }
 
