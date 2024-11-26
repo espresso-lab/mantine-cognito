@@ -10,10 +10,10 @@ interface AuthWrapperProps {
 }
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
-  const { user, stage } = useAuth();
+  const { userAttributes, stage } = useAuth();
   const translation = useTranslation();
 
-  return user ? (
+  return userAttributes ? (
     children
   ) : (
     <Container size={420} my={40}>
