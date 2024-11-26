@@ -148,10 +148,9 @@ const logout = async () => {
 
 const forcedPasswordReset = async ({
   cognitoUser,
-  userAttributes,
   password,
 }: ForcedPasswordResetProps) => {
-  const res = await newPasswordChallenge(cognitoUser, userAttributes, password);
+  const res = await newPasswordChallenge(cognitoUser, password);
 
   document.dispatchEvent(new Event("mantine-cognito-session"));
 
@@ -188,7 +187,7 @@ export const AuthProvider = ({
   cognitoUserPoolId,
   cognitoClientId,
   allowRegistration,
-    language
+  language,
 }: AuthProviderProps) => {
   const [stage, setStage] = usePersistentState<State["stage"]>("login", "login-state");
   const [user, setUser] = usePersistentState<State["user"]>(null, "user-state");
@@ -251,7 +250,7 @@ export const AuthProvider = ({
         sendAccountConfirmationCode,
         sendEmailConfirmationCode,
         updateAttributes,
-        language
+        language,
       }}
     >
       {children}
