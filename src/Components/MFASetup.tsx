@@ -12,7 +12,7 @@ import {
 import { useForm } from "@mantine/form";
 import { useClipboard } from "@mantine/hooks";
 import { useEffect, useState } from "react";
-import UAParser from "ua-parser-js";
+import { UAParser } from 'ua-parser-js';
 import {
   getUserData,
   verifySoftwareToken,
