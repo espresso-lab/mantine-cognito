@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 
+const ReactCompilerConfig = {};
 export default defineConfig({
   build: {
     lib: {
@@ -33,7 +34,14 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
   },
-  plugins: [react(), dts()],
+  plugins: [
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler", ReactCompilerConfig]],
+      },
+    }),
+    dts(),
+  ],
   resolve: {
     alias: {
       // /esm/icons/index.mjs only exports the icons statically, so no separate chunks are created
