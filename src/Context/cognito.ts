@@ -342,7 +342,6 @@ export function updateUserAttributes(attributes: UserAttributes) {
 /**
  * password reset
  */
-
 export function passwordReset(email: string) {
   return new Promise<void>((resolve, reject) => {
     const cognitoUser = getCognitoUser(email.toLowerCase());
