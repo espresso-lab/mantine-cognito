@@ -359,7 +359,6 @@ export function passwordReset(email: string) {
 /**
  * confirm password reset
  */
-
 export function confirmPasswordReset(
   email: string,
   totp: string,
