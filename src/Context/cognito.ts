@@ -67,7 +67,7 @@ function getUserPool() {
 
 function getCognitoUser(email: string) {
   return new CognitoUser({
-    Username: email,
+    Username: email.toLowerCase(),
     Pool: getUserPool(),
   });
 }
@@ -87,12 +87,12 @@ export function getCurrentUser() {
 export function signUp(email: string, password: string) {
   return new Promise<ISignUpResult>((resolve, reject) =>
     getUserPool().signUp(
-      email,
+      email.toLowerCase(),
       password,
       [
         new CognitoUserAttribute({
           Name: "email",
-          Value: email,
+          Value: email.toLowerCase(),
         }),
       ],
       [],
@@ -116,11 +116,11 @@ export function signUp(email: string, password: string) {
 export function signIn(email: string, password: string, totp?: string) {
   return new Promise<CognitoUser>((resolve, reject) => {
     signOut();
-    const cognitoUser = getCognitoUser(email);
+    const cognitoUser = getCognitoUser(email.toLowerCase());
 
     cognitoUser.authenticateUser(
       new AuthenticationDetails({
-        Username: email,
+        Username: email.toLowerCase(),
         Password: password,
       }),
       {
@@ -273,7 +273,7 @@ export function getUserAttributes() {
 
 export function confirmSignUp(email: string, totp: string) {
   return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email);
+    const cognitoUser = getCognitoUser(email.toLowerCase());
     cognitoUser?.confirmRegistration(totp, true, (error, data) => {
       if (error) {
         reject(error);
@@ -345,7 +345,7 @@ export function updateUserAttributes(attributes: UserAttributes) {
 
 export function passwordReset(email: string) {
   return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email);
+    const cognitoUser = getCognitoUser(email.toLowerCase());
     cognitoUser?.forgotPassword({
       onSuccess: (data) => {
         resolve(data);
@@ -367,7 +367,7 @@ export function confirmPasswordReset(
   password: string,
 ) {
   return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email);
+    const cognitoUser = getCognitoUser(email.toLowerCase());
     cognitoUser.confirmPassword(totp, password, {
       onSuccess: (success) => {
         resolve(success);
