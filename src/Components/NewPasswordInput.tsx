@@ -11,6 +11,7 @@ import { useInputState } from "@mantine/hooks";
 import { IconCheck, IconX } from "@tabler/icons-react";
 import type { PasswordInputProps } from "@mantine/core";
 import {useTranslation} from "../Hooks/useTranslation.ts";
+import {useState} from "react";
 
 type NewPasswordInputProps = PasswordInputProps & {
   showRequirements?: boolean;
@@ -56,6 +57,7 @@ const getStrength = (password: NewPasswordInputProps["value"], requirements:  { 
 
 export function NewPasswordInput(props: NewPasswordInputProps) {
   const [value, setValue] = useInputState(props.value);
+  const [touched, setTouched] = useState(false);
 
   const valueString = value === undefined ? "" : value.toString();
 
@@ -76,9 +78,9 @@ export function NewPasswordInput(props: NewPasswordInputProps) {
 
   const onChange: NewPasswordInputProps["onChange"] = (event) => {
     setValue(event.currentTarget.value);
+    setTouched(true);
     props.onChange?.(event);
   };
-
 
   const checks = requirements.map((requirement, index) => (
     <PasswordRequirement
@@ -122,7 +124,7 @@ export function NewPasswordInput(props: NewPasswordInputProps) {
         {bars}
       </Group>
 
-      {props.showRequirements && (
+      {(props.showRequirements && touched) && (
         <Stack align="start" gap={0}>
           {checks}
         </Stack>
