@@ -32,6 +32,7 @@ export default {
     cancel: "Abbrechen",
     disableMFA: "MFA deaktivieren",
     enableMFA: "MFA aktivieren",
+    sendEmailCode: "Verifizierungscode an E-Mail senden",
   },
   links: {
     register: "Noch kein Konto?",

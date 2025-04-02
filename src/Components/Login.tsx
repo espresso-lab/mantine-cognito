@@ -28,7 +28,6 @@ export function Login() {
     login,
     confirmRegistration,
     forcedPasswordReset,
-    userAttributes,
     sendEmailConfirmationCode,
     setStage,
     allowRegistration,
@@ -71,10 +70,6 @@ export function Login() {
     },
   });
 
-  function handleLoginSuccess() {
-    console.log("Login success!");
-  }
-
   async function onLogin() {
     try {
       await login({
@@ -82,7 +77,7 @@ export function Login() {
         ...verificationForm.values,
         ...mfaForm.values,
       });
-      handleLoginSuccess();
+      // Login success!
     } catch (reason) {
       if (reason instanceof Error) {
         switch (reason.name) {
@@ -145,7 +140,7 @@ export function Login() {
         ...loginForm.values,
         ...verificationForm.values,
       });
-      onLogin();
+      await onLogin();
     } catch (reason) {
       if (reason instanceof Error) {
         console.error(reason);
@@ -160,9 +155,7 @@ export function Login() {
         ...firstLogin!,
         ...newPasswordForm.values,
       });
-      if (!userAttributes?.email_verified) {
-        sendEmailConfirmationCode();
-      }
+
       setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
@@ -216,6 +209,10 @@ export function Login() {
           <Box>
             <InputLabel required>Verification Code</InputLabel>
             <Center>
+              <Button fullWidth={true} variant="outline" onClick={sendEmailConfirmationCode} my="md">
+                {translation.buttons.sendEmailCode}
+              </Button>
+
               <PinInput
                 oneTimeCode
                 type="number"
