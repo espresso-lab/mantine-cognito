@@ -22,7 +22,7 @@ import {
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
 import {useTranslation} from "../Hooks/useTranslation.ts";
-import {IconCancel} from "@tabler/icons-react";
+import {IconArrowLeft} from "@tabler/icons-react";
 
 export interface MFASetupProps {
   mfaAppName: string;
@@ -166,7 +166,7 @@ export function MFASetup({ mfaAppName, onEnable, onDisable, onError }: MFASetupP
         <Button
           fullWidth
           color="gray"
-          leftSection={<IconCancel size={12} />}
+          leftSection={<IconArrowLeft size={14} />}
           variant="outline"
           mt="lg"
           onClick={() => {
@@ -184,7 +184,7 @@ export function MFASetup({ mfaAppName, onEnable, onDisable, onError }: MFASetupP
     );
 
   return (
-    <Paper p={30} mt={30} maw={380}>
+    <Paper maw={380}>
       {mode === "disabled" && (
         <Button color="green" onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
       )}
