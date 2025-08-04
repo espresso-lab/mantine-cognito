@@ -6,6 +6,7 @@ export default {
     newPassword: "Neues Passwort",
     forgotPassword: "Zurücksetzen",
     mfa: "Multi-Faktor-Authentifizierung",
+    deviceName: "Gerätename",
   },
   description: {
     login: "Melde dich an, um fortzufahren.",

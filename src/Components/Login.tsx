@@ -170,7 +170,7 @@ export function Login() {
       {mfaRequired ? (
         <form onSubmit={mfaForm.onSubmit(onLogin)}>
           <Box>
-            <InputLabel required>Multi-Factor Code</InputLabel>
+            <InputLabel required>{translation.title.mfa}</InputLabel>
             <Center>
               <PinInput
                 oneTimeCode
@@ -254,6 +254,7 @@ export function Login() {
             withAsterisk
             showRequirements
             {...newPasswordForm.getInputProps("password")}
+              autoComplete="new-password"
           />
           <Button type="submit" fullWidth mt="lg">
             {translation.buttons.newPassword}
@@ -262,6 +263,7 @@ export function Login() {
       ) : (
         <form onSubmit={loginForm.onSubmit(onLogin)}>
           <TextInput
+              autoComplete="username"
             label={translation.fields.email}
             withAsterisk
             placeholder={translation.placeholders.email}
@@ -271,6 +273,7 @@ export function Login() {
             label={translation.fields.password}
             placeholder={translation.placeholders.password}
             {...loginForm.getInputProps("password")}
+            autoComplete="current-password"
             withAsterisk
             mt="md"
           />

@@ -110,6 +110,7 @@ export function ForgotPassword() {
             placeholder="Neues Passwort"
             {...newPasswordForm.getInputProps("password")}
             withAsterisk
+            autoComplete="new-password"
           />
           <Group justify="space-between" mt="lg">
             <Anchor
@@ -134,6 +135,7 @@ export function ForgotPassword() {
             label="E-Mail"
             placeholder="you@email.com"
             withAsterisk
+            autoComplete="username"
             {...forgotPasswordForm.getInputProps("email")}
           />
           <Group justify="space-between" mt="lg">

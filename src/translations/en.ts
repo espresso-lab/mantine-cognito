@@ -6,6 +6,7 @@ export default {
         newPassword: "New Password",
         forgotPassword: "Reset",
         mfa: "Multi-Factor Authentication",
+        deviceName: "Device Name",
     },
     description: {
         login: "Log in to continue.",

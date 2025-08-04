@@ -61,6 +61,7 @@ export function Register() {
           label={translation.fields.email}
           placeholder={translation.placeholders.email}
           withAsterisk
+          autoComplete="username"
           {...form.getInputProps("email")}
         />
         <NewPasswordInput
@@ -68,6 +69,7 @@ export function Register() {
           placeholder={translation.placeholders.password}
           {...form.getInputProps("password")}
           withAsterisk
+          autoComplete="new-password"
           mt="md"
           showRequirements={
             form.isDirty("password") || form.isTouched("password")

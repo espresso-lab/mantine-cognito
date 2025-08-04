@@ -22,12 +22,16 @@ import {
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
 import {useTranslation} from "../Hooks/useTranslation.ts";
+import {IconCancel} from "@tabler/icons-react";
 
 export interface MFASetupProps {
   mfaAppName: string;
+  onEnable?: () => void;
+  onDisable?: () => void;
+  onError?: (error: string) => void;
 }
 
-export function MFASetup({ mfaAppName }: MFASetupProps) {
+export function MFASetup({ mfaAppName, onEnable, onDisable, onError }: MFASetupProps) {
     const translation = useTranslation();
   const clipboard = useClipboard();
   const [mode, setMode] = useState<"disabled" | "enabling" | "enabled">(
@@ -76,9 +80,11 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
           enableMFA()
             .then(() => {
               setMode("enabled");
+              onEnable?.();
             })
             .catch((err) => {
               console.error(err);
+              onError?.(err.message);
             });
         })
         .catch((err: Error) => {
@@ -97,16 +103,19 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
       })
       .catch((err: Error) => {
         console.error("Unable to get MFA code", err.message);
+        onError?.(err.message);
       });
   };
 
-  const onDisable = () => {
+  const onDisableHandler = () => {
     disableMFA()
       .then(() => {
         setMode("disabled");
+        onDisable?.();
       })
       .catch((err) => {
         console.error(err.name, err.message);
+        onError?.(err.message);
       });
   };
 
@@ -135,7 +144,7 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
           {translation.texts.enterCode}
         </Text>
         <TextInput
-          label="Device Name"
+          label={translation.title.deviceName}
           {...form.getInputProps("deviceName")}
           mt="lg"
         />
@@ -156,6 +165,9 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
         </Box>
         <Button
           fullWidth
+          color="gray"
+          leftSection={<IconCancel size={12} />}
+          variant="outline"
           mt="lg"
           onClick={() => {
             setCode(undefined);
@@ -174,11 +186,11 @@ export function MFASetup({ mfaAppName }: MFASetupProps) {
   return (
     <Paper p={30} mt={30} maw={380}>
       {mode === "disabled" && (
-        <Button onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
+        <Button color="green" onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
       )}
       {mode === "enabling" && enabling}
       {mode === "enabled" && (
-        <Button color="red" onClick={onDisable}>
+        <Button color="red" onClick={onDisableHandler}>
           {translation.buttons.disableMFA}
         </Button>
       )}
