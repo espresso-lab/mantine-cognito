@@ -7,6 +7,8 @@ interface MantineAuthProps {
   allowRegistration?: boolean;
   children: React.ReactNode;
   language?: Language;
+  headerSection?: React.ReactNode;
+  footerSection?: React.ReactNode;
 }
 
 export function MantineAuth({
@@ -14,13 +16,18 @@ export function MantineAuth({
   cognitoClientId,
   allowRegistration = true,
   children,
-  language = 'en'
+  language = 'en',
+  headerSection,
+  footerSection
 }: MantineAuthProps) {
   return (
     <AuthProvider
       {...{ cognitoUserPoolId, cognitoClientId, allowRegistration, language }}
     >
-      <AuthWrapper>{children}</AuthWrapper>
+      <AuthWrapper
+          headerSection={headerSection}
+          footerSection={footerSection}
+      >{children}</AuthWrapper>
     </AuthProvider>
   );
 }

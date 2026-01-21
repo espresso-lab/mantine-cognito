@@ -62,6 +62,32 @@ export function AnyComponent() {
 In the example above, the `useAuth` hook is used to get the user attributes and the logout function.
 The `useAuth` hook works only inside the `MantineAuth`-Provider.
 
+### Custom header and footer
+
+Additionally, you can customize the header and footer of the `MantineAuth` component.
+
+```tsx
+import { MantineAuth, MFASetup } from "@espresso-lab/mantine-cognito";
+
+function App() {
+  return (
+    <MantineAuth
+      cognitoUserPoolId="<cognito-user-pool-id>"
+      cognitoClientId="<cognito-client-id>"
+      language="en"
+      headerSection={<Center>Example Company (or Logo)</Center>}
+      footerSection={<Text size={"xs"} p="md">Link to homepage</Text>}
+    >
+      <p>You are logged in!</p>
+      <MFASetup mfaAppName="Test" />
+    </MantineAuth>
+  );
+}
+
+export default App;
+```
+
+
 ### Backend authorization
 
 ```tsx

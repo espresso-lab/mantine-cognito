@@ -5,7 +5,6 @@ import {
   Center,
   Group,
   InputLabel,
-  Paper,
   PinInput,
   Text,
   TextInput,
@@ -86,7 +85,7 @@ export function ForgotPassword() {
   }
 
   return (
-    <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+    <>
       {nextStage ? (
         <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
           <Box>
@@ -156,6 +155,6 @@ export function ForgotPassword() {
           </Group>
         </form>
       )}
-    </Paper>
+    </>
   );
 }

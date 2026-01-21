@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Paper,
   TextInput,
   Group,
   Center,
@@ -55,7 +54,7 @@ export function Register() {
   }
 
   return (
-    <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+    <>
       <form onSubmit={form.onSubmit(onSubmit)}>
         <TextInput
           label={translation.fields.email}
@@ -92,6 +91,6 @@ export function Register() {
           <Button type="submit">{translation.buttons.register}</Button>
         </Group>
       </form>
-    </Paper>
+    </>
   );
 }

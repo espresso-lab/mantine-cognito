@@ -5,7 +5,6 @@ import {
   Center,
   Group,
   InputLabel,
-  Paper,
   PasswordInput,
   PinInput,
   Text,
@@ -166,7 +165,7 @@ export function Login() {
   }
 
   return (
-    <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+    <>
       {mfaRequired ? (
         <form onSubmit={mfaForm.onSubmit(onLogin)}>
           <Box>
@@ -306,6 +305,6 @@ export function Login() {
           </Group>
         </form>
       )}
-    </Paper>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, MantineProvider, Text } from "@mantine/core";
+import {Button, Center, MantineProvider, Text} from "@mantine/core";
 import { MantineAuth } from "./Components/MantineAuth";
 import { MFASetup } from "./Components/MFASetup";
 import { useAuth } from "./Hooks/useAuth";
@@ -10,6 +10,8 @@ function App() {
         cognitoUserPoolId="eu-central-1_hTk8B9TeZ"
         cognitoClientId="4f8lepkmgdmin6vein41gbhfh9"
         allowRegistration={true}
+        headerSection={<Center>Example Company</Center>}
+        footerSection={<Text size={"xs"} p="md">Link to homepage</Text>}
       >
         <SecureContent />
       </MantineAuth>
