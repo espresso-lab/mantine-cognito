@@ -57,6 +57,12 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     },
   });
 
+  const formatError = (err: unknown): string => {
+    const error = err as Error & { code?: string; underlyingError?: Error };
+    const message = error.underlyingError?.message ?? error.message ?? JSON.stringify(err);
+    return `${error.name ?? "Error"}: ${message}${error.code ? ` (${error.code})` : ""}`;
+  };
+
   const loadPasskeys = async () => {
     try {
       const result = await getPasskeys();
@@ -98,7 +104,7 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
               onEnable?.();
             })
             .catch((err) => {
-              onError?.(err.message);
+              onError?.(formatError(err));
             });
         })
         .catch((err: Error) => {
@@ -114,8 +120,8 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
         setCode(code);
         setMode("enabling");
       })
-      .catch((err: Error) => {
-        onError?.(err.message);
+      .catch((err: unknown) => {
+        onError?.(formatError(err));
       });
   };
 
@@ -125,8 +131,8 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
         setMode("disabled");
         onDisable?.();
       })
-      .catch((err) => {
-        onError?.(err.message);
+      .catch((err: unknown) => {
+        onError?.(formatError(err));
       });
   };
 
@@ -134,8 +140,8 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     try {
       await registerPasskey();
       await loadPasskeys();
-    } catch (err) {
-      onError?.((err as Error).message);
+    } catch (err: unknown) {
+      onError?.(formatError(err));
     }
   };
 
@@ -143,8 +149,8 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     try {
       await removePasskey(credentialId);
       await loadPasskeys();
-    } catch (err) {
-      onError?.((err as Error).message);
+    } catch (err: unknown) {
+      onError?.(formatError(err));
     }
   };
 
