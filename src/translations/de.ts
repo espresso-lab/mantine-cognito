@@ -28,6 +28,7 @@ export default {
   },
   buttons: {
     login: "Anmelden",
+    loginWithPasskey: "Mit Passkey anmelden",
     register: "Registrieren",
     code: "Bestätigen",
     newPassword: "Bestätigen",

@@ -17,6 +17,7 @@ import {
   resendAccountConfirmationCode,
   resendEmailConfirmationCode,
   signIn,
+  signInWithPasskey,
   signOut,
   signUp,
   updateUserAttributes,
@@ -87,6 +88,7 @@ type State = {
   sendAccountConfirmationCode: (email: string) => Promise<void>;
   sendEmailConfirmationCode: () => Promise<void>;
   login: (props: LoginProps) => Promise<SignInResult>;
+  loginWithPasskey: (email: string) => Promise<SignInResult>;
   logout: () => void;
   language: Language;
 };
@@ -125,6 +127,12 @@ const handleConfirmForgotPassword = async ({
 
 const login = async ({ email, password }: LoginProps) => {
   const result = await signIn(email, password);
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+  return result;
+};
+
+const loginWithPasskey = async (email: string) => {
+  const result = await signInWithPasskey(email);
   document.dispatchEvent(new Event("mantine-cognito-session"));
   return result;
 };
@@ -217,6 +225,7 @@ export const AuthProvider = ({
         userGroups,
         register,
         login,
+        loginWithPasskey,
         logout,
         confirmMFA,
         confirmRegistration: handleConfirmRegistration,

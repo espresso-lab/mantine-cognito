@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Center,
+  Divider,
   Group,
   InputLabel,
   PasswordInput,
@@ -11,7 +12,7 @@ import {
   TextInput,
 } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconFingerprint } from "@tabler/icons-react";
 import { useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
@@ -25,6 +26,7 @@ export function Login() {
   const [newPasswordRequired, setNewPasswordRequired] = useState(false);
   const {
     login,
+    loginWithPasskey,
     confirmMFA,
     confirmRegistration,
     forcedPasswordReset,
@@ -159,6 +161,24 @@ export function Login() {
     }
   }
 
+  async function onPasskeyLogin() {
+    if (!loginForm.validateField("email").hasError) {
+      setLoading(true);
+      try {
+        const result = await loginWithPasskey(loginForm.values.email);
+        if (result.nextStep === "CONFIRM_SIGN_IN_WITH_TOTP_CODE") {
+          setMfaRequired(true);
+        }
+      } catch (reason) {
+        if (reason instanceof Error) {
+          loginForm.setFieldError("email", reason.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+  }
+
   return (
     <>
       {mfaRequired ? (
@@ -273,6 +293,16 @@ export function Login() {
           />
           <Button type="submit" fullWidth mt="lg" loading={loading}>
             {translation.buttons.login}
+          </Button>
+          <Divider my="md" />
+          <Button
+            fullWidth
+            variant="light"
+            leftSection={<IconFingerprint size={20} />}
+            onClick={onPasskeyLogin}
+            loading={loading}
+          >
+            {translation.buttons.loginWithPasskey}
           </Button>
           <Group justify="space-between" mt="md">
             {allowRegistration && (

@@ -29,6 +29,8 @@ export type SignInNextStep =
   | "DONE"
   | "CONFIRM_SIGN_IN_WITH_TOTP_CODE"
   | "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED"
+  | "CONFIRM_SIGN_IN_WITH_PASSWORD"
+  | "CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION"
   | "CONFIRM_SIGN_UP";
 
 export interface SignInResult {
@@ -75,6 +77,21 @@ export async function signIn(email: string, password: string): Promise<SignInRes
   const { isSignedIn, nextStep } = await amplifySignIn({
     username: email.toLowerCase(),
     password,
+  });
+  return {
+    isSignedIn,
+    nextStep: nextStep.signInStep as SignInNextStep,
+  };
+}
+
+export async function signInWithPasskey(email: string): Promise<SignInResult> {
+  await amplifySignOut().catch(() => {});
+  const { isSignedIn, nextStep } = await amplifySignIn({
+    username: email.toLowerCase(),
+    options: {
+      authFlowType: "USER_AUTH",
+      preferredChallenge: "WEB_AUTHN",
+    },
   });
   return {
     isSignedIn,
