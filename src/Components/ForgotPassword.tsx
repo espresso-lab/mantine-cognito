@@ -14,17 +14,20 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { useAuth } from "../Hooks/useAuth";
+import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function ForgotPassword() {
   const { forgotPassword, confirmForgotPassword, setStage } = useAuth();
+  const translation = useTranslation();
 
+  const [loading, setLoading] = useState(false);
   const [nextStage, setNextStage] = useState(false);
   const forgotPasswordForm = useForm({
     initialValues: {
       email: "",
     },
     validate: {
-      email: isEmail("Invalid email."),
+      email: isEmail(translation.validation.email),
     },
   });
 
@@ -34,18 +37,18 @@ export function ForgotPassword() {
       password: "",
     },
     validate: {
-      totp: isNotEmpty("Code required."),
-      password: isNotEmpty("Password required."),
+      totp: isNotEmpty(translation.validation.code),
+      password: isNotEmpty(translation.validation.password),
     },
   });
 
   async function onForgotPassword() {
+    setLoading(true);
     try {
       await forgotPassword(forgotPasswordForm.values);
       setNextStage(true);
     } catch (reason) {
       if (reason instanceof Error) {
-        console.log(reason.name, reason.message);
         switch (reason.name) {
           case "UserNotFoundException": {
             forgotPasswordForm.setFieldError("email", reason.message);
@@ -53,14 +56,16 @@ export function ForgotPassword() {
           }
           default: {
             forgotPasswordForm.setFieldError("email", reason.message);
-            console.error(reason.name, reason.message);
           }
         }
       }
+    } finally {
+      setLoading(false);
     }
   }
 
   async function onNewPassword() {
+    setLoading(true);
     try {
       await confirmForgotPassword({
         ...forgotPasswordForm.values,
@@ -69,7 +74,6 @@ export function ForgotPassword() {
       setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
-        console.log(reason.name, reason.message);
         switch (reason.name) {
           case "CodeMismatchException": {
             newPasswordForm.setFieldError("totp", reason.message);
@@ -77,10 +81,11 @@ export function ForgotPassword() {
           }
           default: {
             newPasswordForm.setFieldError("password", reason.message);
-            console.error(reason.name, reason.message);
           }
         }
       }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -89,7 +94,7 @@ export function ForgotPassword() {
       {nextStage ? (
         <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
           <Box>
-            <InputLabel required>Recovery Code</InputLabel>
+            <InputLabel required>{translation.title.mfa}</InputLabel>
             <Center>
               <PinInput
                 oneTimeCode
@@ -105,8 +110,8 @@ export function ForgotPassword() {
             </Text>
           </Box>
           <NewPasswordInput
-            label="Neues Passwort"
-            placeholder="Neues Passwort"
+            label={translation.fields.newPassword}
+            placeholder={translation.placeholders.newPassword}
             {...newPasswordForm.getInputProps("password")}
             withAsterisk
             autoComplete="new-password"
@@ -122,17 +127,17 @@ export function ForgotPassword() {
             >
               <Center inline>
                 <IconArrowLeft size={20} />
-                <Text ml={5}>Zurück zum Login</Text>
+                <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit">Submit</Button>
+            <Button type="submit" loading={loading}>{translation.buttons.newPassword}</Button>
           </Group>
         </form>
       ) : (
         <form onSubmit={forgotPasswordForm.onSubmit(onForgotPassword)}>
           <TextInput
-            label="E-Mail"
-            placeholder="you@email.com"
+            label={translation.fields.email}
+            placeholder={translation.placeholders.email}
             withAsterisk
             autoComplete="username"
             {...forgotPasswordForm.getInputProps("email")}
@@ -148,10 +153,10 @@ export function ForgotPassword() {
             >
               <Center inline>
                 <IconArrowLeft size={20} />
-                <Text ml={5}>Zurück zum Login</Text>
+                <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit">Absenden</Button>
+            <Button type="submit" loading={loading}>{translation.buttons.submit}</Button>
           </Group>
         </form>
       )}

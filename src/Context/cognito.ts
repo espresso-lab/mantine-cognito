@@ -1,522 +1,200 @@
+import { Amplify } from "aws-amplify";
 import {
-  AuthenticationDetails,
-  CognitoUser,
-  CognitoUserAttribute,
-  CognitoUserPool,
-  CognitoUserSession,
-  ISignUpResult,
-  UserData,
-} from "amazon-cognito-identity-js";
-import { convertUserAttributeValue } from "./utils";
+  confirmResetPassword,
+  confirmSignIn,
+  confirmSignUp,
+  confirmUserAttribute,
+  fetchAuthSession,
+  fetchMFAPreference,
+  fetchUserAttributes,
+  resendSignUpCode,
+  resetPassword,
+  sendUserAttributeVerificationCode,
+  setUpTOTP,
+  signIn as amplifySignIn,
+  signOut as amplifySignOut,
+  updateMFAPreference,
+  updateUserAttributes as amplifyUpdateUserAttributes,
+  verifyTOTPSetup,
+  associateWebAuthnCredential,
+  listWebAuthnCredentials,
+  deleteWebAuthnCredential,
+  signUp as amplifySignUp,
+  type FetchUserAttributesOutput,
+} from "aws-amplify/auth";
 
 export type UserAttributes = Record<string, string | boolean>;
 
-export type AuthenticatedCallCallback<Type> = (
-  authenticatedUser: CognitoUser,
-  resolve: (value: Type | PromiseLike<Type>) => void,
-  reject: (error: Error | null) => void,
-) => void;
+export type SignInNextStep =
+  | "DONE"
+  | "CONFIRM_SIGN_IN_WITH_TOTP_CODE"
+  | "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED"
+  | "CONFIRM_SIGN_UP";
 
-export interface FirstLogin {
-  cognitoUser: CognitoUser;
-  userAttributes: UserAttributes;
+export interface SignInResult {
+  isSignedIn: boolean;
+  nextStep: SignInNextStep;
 }
 
-export class LoginMFAException extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "LoginMFAException";
-  }
-}
-
-export class NewPasswordRequiredException extends Error {
-  firstLogin: FirstLogin;
-  constructor(message: string, firstLogin: FirstLogin) {
-    super(message);
-    this.name = "NewPasswordRequiredException";
-    this.firstLogin = firstLogin;
-  }
-}
-
-/**
- * get cognito user pool
- */
 interface UserPoolAttributes {
   cognitoUserPoolId: string;
   cognitoClientId: string;
 }
 
 export function initUserPool(poolProps: UserPoolAttributes) {
-  window.MantineCognitoUserPool = new CognitoUserPool({
-    UserPoolId: poolProps.cognitoUserPoolId,
-    ClientId: poolProps.cognitoClientId,
-  });
-}
-
-function getUserPool() {
-  if (!window.MantineCognitoUserPool) {
-    throw new Error("Cognito Userpool has not been initialized.");
-  }
-
-  return window.MantineCognitoUserPool;
-}
-
-/**
- * get cognito user
- */
-
-function getCognitoUser(email: string) {
-  return new CognitoUser({
-    Username: email.toLowerCase(),
-    Pool: getUserPool(),
-  });
-}
-
-/**
- * get current user
- */
-
-export function getCurrentUser() {
-  return getUserPool().getCurrentUser();
-}
-
-/**
- * sign up
- */
-
-export function signUp(email: string, password: string) {
-  return new Promise<ISignUpResult>((resolve, reject) =>
-    getUserPool().signUp(
-      email.toLowerCase(),
-      password,
-      [
-        new CognitoUserAttribute({
-          Name: "email",
-          Value: email.toLowerCase(),
-        }),
-      ],
-      [],
-      (error, data) => {
-        if (error) {
-          reject(error);
-        } else if (data) {
-          resolve(data);
-        } else {
-          reject(new Error("Did not get a user from signUp."));
-        }
+  Amplify.configure({
+    Auth: {
+      Cognito: {
+        userPoolId: poolProps.cognitoUserPoolId,
+        userPoolClientId: poolProps.cognitoClientId,
       },
-    ),
+    },
+  });
+}
+
+function convertAttributes(attrs: FetchUserAttributesOutput): UserAttributes {
+  return Object.entries(attrs).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      [key]: value === "true" ? true : value === "false" ? false : (value ?? ""),
+    }),
+    {} as UserAttributes,
   );
 }
 
-/**
- * sign in
- */
-
-export function signIn(email: string, password: string, totp?: string) {
-  return new Promise<CognitoUser>((resolve, reject) => {
-    signOut();
-    const cognitoUser = getCognitoUser(email.toLowerCase());
-
-    cognitoUser.authenticateUser(
-      new AuthenticationDetails({
-        Username: email.toLowerCase(),
-        Password: password,
-      }),
-      {
-        onSuccess: () => {
-          resolve(cognitoUser);
-        },
-        onFailure: (error) => {
-          reject(error);
-        },
-        newPasswordRequired: (userAttributes) => {
-          reject(
-            new NewPasswordRequiredException("A new password must be set.", {
-              cognitoUser,
-              userAttributes,
-            }),
-          );
-        },
-        totpRequired: () => {
-          if (totp !== undefined) {
-            cognitoUser.sendMFACode(
-              totp,
-              {
-                onSuccess: () => {
-                  resolve(cognitoUser);
-                },
-                onFailure: (error) => {
-                  reject(error);
-                },
-              },
-              "SOFTWARE_TOKEN_MFA",
-            );
-          } else {
-            return reject(new LoginMFAException("No MFA token provided."));
-          }
-        },
-      },
-    );
+export async function signUp(email: string, password: string) {
+  return amplifySignUp({
+    username: email.toLowerCase(),
+    password,
+    options: { userAttributes: { email: email.toLowerCase() } },
   });
 }
 
-/**
- * sign out
- */
-
-export function signOut() {
-  const cognitoUser = getCurrentUser();
-  cognitoUser?.globalSignOut({
-    onSuccess: () => {},
-    onFailure: () => {},
+export async function signIn(email: string, password: string): Promise<SignInResult> {
+  await amplifySignOut().catch(() => {});
+  const { isSignedIn, nextStep } = await amplifySignIn({
+    username: email.toLowerCase(),
+    password,
   });
-  // twice, because of session and cookie
-  cognitoUser?.signOut();
-  cognitoUser?.signOut();
+  return {
+    isSignedIn,
+    nextStep: nextStep.signInStep as SignInNextStep,
+  };
 }
 
-/**
- * get session
- */
-
-export function getSession() {
-  return new Promise<{
-    session: CognitoUserSession;
-    authenticatedUser: CognitoUser;
-  }>((resolve, reject) => {
-    const cognitoUser = getCurrentUser();
-    if (cognitoUser === null) reject(null);
-    cognitoUser?.getSession(
-      (error: Error, session: CognitoUserSession | null) => {
-        if (error !== null || session === null) {
-          return reject(null);
-        }
-        resolve({ session, authenticatedUser: cognitoUser });
-      },
-    );
+export async function confirmSignInWithCode(code: string): Promise<SignInResult> {
+  const { isSignedIn, nextStep } = await confirmSignIn({
+    challengeResponse: code,
   });
+  return {
+    isSignedIn,
+    nextStep: nextStep.signInStep as SignInNextStep,
+  };
 }
 
-/**
- * authenticated call
- */
-
-export function authenticatedCall<Type>(
-  callback: AuthenticatedCallCallback<Type>,
-) {
-  return new Promise<Type>((resolve, reject) => {
-    getSession().then(({ authenticatedUser }) => {
-      if (!authenticatedUser) {
-        return reject(new Error("Unable to get current user."));
-      }
-      callback(authenticatedUser, resolve, reject);
-    });
+export async function confirmSignInWithNewPassword(password: string): Promise<SignInResult> {
+  const { isSignedIn, nextStep } = await confirmSignIn({
+    challengeResponse: password,
   });
+  return {
+    isSignedIn,
+    nextStep: nextStep.signInStep as SignInNextStep,
+  };
 }
 
-/**
- * get session valid
- */
+export async function signOut() {
+  await amplifySignOut({ global: true });
+}
 
 export async function isSessionValid() {
-  const { session } = await getSession();
-  return session?.isValid();
+  const session = await fetchAuthSession();
+  return session.tokens !== undefined;
 }
-
-/**
- * get access token
- */
 
 export async function getAccessToken() {
-  const { session } = await getSession();
-  return session?.getAccessToken().getJwtToken();
+  const session = await fetchAuthSession();
+  return session.tokens?.accessToken?.toString();
 }
-
-/**
- * get id token
- */
 
 export async function getIdToken() {
-  const { session } = await getSession();
-  return session?.getIdToken().getJwtToken();
+  const session = await fetchAuthSession();
+  return session.tokens?.idToken?.toString();
 }
 
-/**
- * get user attributes
- */
+export async function getUserAttributes(): Promise<UserAttributes> {
+  const attrs = await fetchUserAttributes();
+  return convertAttributes(attrs);
+}
 
-export function getUserAttributes() {
-  return authenticatedCall<UserAttributes>(
-    (authenticatedUser, resolve, reject) => {
-      authenticatedUser.getUserAttributes((error, attributes) => {
-        if (error) return reject(error);
-        resolve(
-          (attributes
-            ? attributes.reduce(
-                (acc, cur) => ({
-                  ...acc,
-                  [cur.getName()]: convertUserAttributeValue(cur.getValue()),
-                }),
-                {},
-              )
-            : {}) as UserAttributes,
-        );
-      });
-    },
+export async function confirmRegistration(email: string, code: string) {
+  await confirmSignUp({ username: email.toLowerCase(), confirmationCode: code });
+}
+
+export async function resendAccountConfirmationCode(email: string) {
+  await resendSignUpCode({ username: email.toLowerCase() });
+}
+
+export async function resendEmailConfirmationCode() {
+  await sendUserAttributeVerificationCode({ userAttributeKey: "email" });
+}
+
+export async function updateUserAttributes(attributes: UserAttributes) {
+  const userAttributes = Object.fromEntries(
+    Object.entries(attributes).map(([key, value]) => [key, String(value)]),
   );
+  await amplifyUpdateUserAttributes({ userAttributes });
 }
 
-/**
- * confirm user registration
- */
+export async function passwordReset(email: string) {
+  await resetPassword({ username: email.toLowerCase() });
+}
 
-export function confirmSignUp(email: string, totp: string) {
-  return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email.toLowerCase());
-    cognitoUser?.confirmRegistration(totp, true, (error, data) => {
-      if (error) {
-        reject(error);
-      } else if (data) {
-        resolve(data);
-      } else {
-        reject(new Error("Error confirming signup."));
-      }
-    });
+export async function confirmPasswordReset(email: string, code: string, password: string) {
+  await confirmResetPassword({
+    username: email.toLowerCase(),
+    confirmationCode: code,
+    newPassword: password,
   });
 }
 
-/**
- * new account confirmation code
- */
-
-export function resendAccountConfirmationCode() {
-  return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCurrentUser();
-    cognitoUser?.resendConfirmationCode((error, data) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(data);
-    });
-  });
+export async function verifyUserAttribute(attribute: "email" | "phone_number", code: string) {
+  await confirmUserAttribute({ userAttributeKey: attribute, confirmationCode: code });
 }
 
-/**
- * resend email confirmation code
- */
-
-export function resendEmailConfirmationCode() {
-  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
-    cognitoUser.getAttributeVerificationCode("email", {
-      onSuccess: (data) => {
-        resolve(data);
-      },
-      onFailure: (error) => {
-        reject(error);
-      },
-    });
-  });
+export async function associateSoftwareToken() {
+  const totpSetup = await setUpTOTP();
+  return totpSetup.sharedSecret;
 }
 
-/**
- * update user attribute
- */
-
-export function updateUserAttributes(attributes: UserAttributes) {
-  const attributeList = Object.keys(attributes).map(
-    (attribute) =>
-      new CognitoUserAttribute({
-        Name: attribute,
-        Value: String(attributes[attribute]),
-      }),
-  );
-  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
-    cognitoUser.updateAttributes(attributeList, (error, result) => {
-      if (error != null) return reject(error);
-      resolve(result ?? "User updated.");
-    });
-  });
+export async function verifySoftwareToken(code: string) {
+  await verifyTOTPSetup({ code });
 }
 
-/**
- * password reset
- */
-export function passwordReset(email: string) {
-  return new Promise<void>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email.toLowerCase());
-    cognitoUser?.forgotPassword({
-      onSuccess: (data) => {
-        resolve(data);
-      },
-      onFailure: (error) => {
-        reject(error);
-      },
-    });
-  });
+export async function enableMFA() {
+  await updateMFAPreference({ totp: "PREFERRED" });
 }
 
-/**
- * confirm password reset
- */
-export function confirmPasswordReset(
-  email: string,
-  totp: string,
-  password: string,
-) {
-  return new Promise<string>((resolve, reject) => {
-    const cognitoUser = getCognitoUser(email.toLowerCase());
-    cognitoUser.confirmPassword(totp, password, {
-      onSuccess: (success) => {
-        resolve(success);
-      },
-      onFailure: (error) => {
-        reject(error);
-      },
-    });
-  });
+export async function disableMFA() {
+  await updateMFAPreference({ totp: "DISABLED" });
 }
 
-/**
- * new password challenge
- */
-
-export function newPasswordChallenge(
-  cognitoUser: CognitoUser,
-  password: string,
-) {
-  return new Promise<CognitoUserSession>((resolve, reject) => {
-    cognitoUser.completeNewPasswordChallenge(
-      password,
-      {},
-      {
-        onSuccess: (data) => {
-          resolve(data);
-        },
-        onFailure: (error) => {
-          reject(error);
-        },
-      },
-    );
-  });
+export async function getMFAPreference() {
+  return fetchMFAPreference();
 }
 
-/**
- * verify user attribute
- */
-
-export function verifyUserAttribute(attribute: string, totp: string) {
-  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
-    cognitoUser.verifyAttribute(attribute, totp, {
-      onFailure(error) {
-        reject(error);
-      },
-      onSuccess(success) {
-        resolve(success);
-      },
-    });
-  });
+export async function getUserGroups(): Promise<string[]> {
+  const session = await fetchAuthSession();
+  return (session.tokens?.accessToken?.payload?.["cognito:groups"] as string[]) ?? [];
 }
 
-/**
- * associate software token
- */
-
-export function associateSoftwareToken() {
-  return authenticatedCall<string>((cognitoUser, resolve, reject) => {
-    cognitoUser.associateSoftwareToken({
-      associateSecretCode: (secretCode) => {
-        resolve(secretCode);
-      },
-      onFailure: (error) => {
-        reject(error);
-      },
-    });
-  });
+export async function registerPasskey() {
+  await associateWebAuthnCredential();
 }
 
-/**
- * get user data
- */
-
-export function getUserData() {
-  return authenticatedCall<UserData | undefined>(
-    (cognitoUser, resolve, reject) => {
-      cognitoUser.getUserData((err, data) => {
-        if (err != null) return reject(err);
-        resolve(data);
-      });
-    },
-  );
+export async function getPasskeys() {
+  return listWebAuthnCredentials();
 }
 
-/**
- * verify software token
- */
-
-export function verifySoftwareToken(code: string, deviceName: string) {
-  return authenticatedCall((cognitoUser, resolve, reject) => {
-    cognitoUser.verifySoftwareToken(code, deviceName, {
-      onSuccess: () => {
-        resolve(undefined);
-      },
-      onFailure: (error: Error) => {
-        reject(error);
-      },
-    });
-  });
-}
-
-/**
- * enable mfa
- */
-
-export function enableMFA() {
-  return setMFA(true);
-}
-
-/**
- * disable mfa
- */
-
-export function disableMFA() {
-  return setMFA(false);
-}
-
-/**
- * set mfa
- */
-
-export function setMFA(enabled: boolean) {
-  return authenticatedCall<string | undefined>(
-    (cognitoUser, resolve, reject) => {
-      const totpMfaSettings = {
-        PreferredMfa: enabled,
-        Enabled: enabled,
-      };
-
-      cognitoUser.setUserMfaPreference(
-        null,
-        totpMfaSettings,
-        (error, result) => {
-          if (error != null) return reject(error);
-          type CognitoUserEnhanced = CognitoUser & {
-            clearCachedUserData: () => void;
-          };
-          const user = cognitoUser as CognitoUserEnhanced;
-          user.clearCachedUserData();
-          resolve(result);
-        },
-      );
-    },
-  );
-}
-
-/**
- * get user groups
- */
-
-export async function getUserGroups() {
-  const { session } = await getSession();
-  return session?.getAccessToken()?.decodePayload()?.["cognito:groups"] ?? [];
+export async function removePasskey(credentialId: string) {
+  await deleteWebAuthnCredential({ credentialId });
 }

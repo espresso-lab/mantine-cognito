@@ -9,7 +9,7 @@ import QRCodeStyling, {
   Options,
   TypeNumber,
 } from "qr-code-styling";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 interface QRCodeProps {
   value?: string;
@@ -17,7 +17,7 @@ interface QRCodeProps {
 }
 
 export function QRCode({ value, options }: QRCodeProps) {
-  const [defaultOptions, setDefaultOptions] = useState<Options>({
+  const mergedOptions = useMemo<Options>(() => ({
     width: 300,
     height: 300,
     type: "svg" as DrawType,
@@ -43,27 +43,20 @@ export function QRCode({ value, options }: QRCodeProps) {
       type: "dot" as CornerDotType,
     },
     ...options,
-  });
-
-  useEffect(() => {
-    setDefaultOptions((previous) => ({
-      ...previous,
-      ...options,
-    }));
-  }, [options]);
+  }), [value, options]);
 
   const ref = useRef<HTMLDivElement>(null);
-  const [qrCode] = useState<QRCodeStyling>(new QRCodeStyling(defaultOptions));
+  const qrCode = useMemo(() => new QRCodeStyling(mergedOptions), []);
 
   useEffect(() => {
     if (ref.current) {
       qrCode.append(ref.current);
     }
-  }, [qrCode, ref]);
+  }, [qrCode]);
 
   useEffect(() => {
-    if (!qrCode) return;
-    qrCode.update(defaultOptions);
-  }, [qrCode, defaultOptions]);
+    qrCode.update(mergedOptions);
+  }, [qrCode, mergedOptions]);
+
   return <Box ref={ref} />;
 }

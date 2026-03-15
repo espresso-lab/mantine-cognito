@@ -13,21 +13,22 @@ import {
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
-import { FirstLogin, NewPasswordRequiredException } from "../Context/cognito";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
 import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Login() {
   const translation = useTranslation();
+  const [loading, setLoading] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
-  const [firstLogin, setFirstLogin] = useState<FirstLogin>();
+  const [newPasswordRequired, setNewPasswordRequired] = useState(false);
   const {
     login,
+    confirmMFA,
     confirmRegistration,
     forcedPasswordReset,
-    sendEmailConfirmationCode,
+    sendAccountConfirmationCode,
     setStage,
     allowRegistration,
   } = useAuth();
@@ -70,13 +71,23 @@ export function Login() {
   });
 
   async function onLogin() {
+    setLoading(true);
     try {
-      await login({
-        ...loginForm.values,
-        ...verificationForm.values,
-        ...mfaForm.values,
-      });
-      // Login success!
+      const result = mfaRequired
+        ? await confirmMFA({ code: mfaForm.values.totp ?? "" })
+        : await login(loginForm.values);
+
+      switch (result.nextStep) {
+        case "CONFIRM_SIGN_IN_WITH_TOTP_CODE":
+          setMfaRequired(true);
+          break;
+        case "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED":
+          setNewPasswordRequired(true);
+          break;
+        case "CONFIRM_SIGN_UP":
+          setVerificationRequired(true);
+          break;
+      }
     } catch (reason) {
       if (reason instanceof Error) {
         switch (reason.name) {
@@ -95,45 +106,30 @@ export function Login() {
             );
             break;
           }
-          case "CodeMismatchException": {
-            if (verificationForm.isDirty()) {
-              verificationForm.setFieldError("totp", reason.message);
-            } else if (mfaForm.isDirty()) {
-              mfaForm.setFieldError("totp", reason.message);
-            }
-            break;
-          }
+          case "CodeMismatchException":
           case "ExpiredCodeException": {
-            if (verificationForm.isDirty()) {
+            if (verificationRequired) {
               verificationForm.setFieldError("totp", reason.message);
-            } else if (mfaForm.isDirty()) {
+            } else if (mfaRequired) {
               mfaForm.setFieldError("totp", reason.message);
             }
-            break;
-          }
-          case "NewPasswordRequiredException": {
-            if (reason instanceof NewPasswordRequiredException) {
-              setFirstLogin(reason.firstLogin);
-            }
-            break;
-          }
-          case "LoginMFAException": {
-            setMfaRequired(true);
             break;
           }
           case "UserNotConfirmedException": {
             setVerificationRequired(true);
             break;
           }
-          default: {
-            console.error(reason);
-          }
+          default:
+            break;
         }
       }
+    } finally {
+      setLoading(false);
     }
   }
 
   async function onVerification() {
+    setLoading(true);
     try {
       await confirmRegistration({
         ...loginForm.values,
@@ -142,25 +138,24 @@ export function Login() {
       await onLogin();
     } catch (reason) {
       if (reason instanceof Error) {
-        console.error(reason);
         verificationForm.setFieldError("totp", reason.message);
       }
+    } finally {
+      setLoading(false);
     }
   }
 
   async function onNewPassword() {
+    setLoading(true);
     try {
-      await forcedPasswordReset({
-        ...firstLogin!,
-        ...newPasswordForm.values,
-      });
-
+      await forcedPasswordReset(newPasswordForm.values);
       setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
-        console.error(reason);
         newPasswordForm.setFieldError("password", reason.message);
       }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -200,15 +195,15 @@ export function Login() {
                 <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit">{translation.buttons.code}</Button>
+            <Button type="submit" loading={loading}>{translation.buttons.code}</Button>
           </Group>
         </form>
       ) : verificationRequired ? (
         <form onSubmit={verificationForm.onSubmit(onVerification)}>
           <Box>
-            <InputLabel required>Verification Code</InputLabel>
+            <InputLabel required>{translation.title.code}</InputLabel>
             <Center>
-              <Button fullWidth={true} variant="outline" onClick={sendEmailConfirmationCode} my="md">
+              <Button fullWidth variant="outline" onClick={() => sendAccountConfirmationCode(loginForm.values.email)} my="md">
                 {translation.buttons.sendEmailCode}
               </Button>
 
@@ -241,21 +236,21 @@ export function Login() {
                 <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit">{translation.buttons.code}</Button>
+            <Button type="submit" loading={loading}>{translation.buttons.code}</Button>
           </Group>
         </form>
-      ) : firstLogin ? (
+      ) : newPasswordRequired ? (
         <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
           <NewPasswordInput
             label={translation.fields.newPassword}
             placeholder={translation.placeholders.newPassword}
-            autoFocus={!!firstLogin}
+            autoFocus={newPasswordRequired}
             withAsterisk
             showRequirements
             {...newPasswordForm.getInputProps("password")}
               autoComplete="new-password"
           />
-          <Button type="submit" fullWidth mt="lg">
+          <Button type="submit" fullWidth mt="lg" loading={loading}>
             {translation.buttons.newPassword}
           </Button>
         </form>
@@ -276,7 +271,7 @@ export function Login() {
             withAsterisk
             mt="md"
           />
-          <Button type="submit" fullWidth mt="lg">
+          <Button type="submit" fullWidth mt="lg" loading={loading}>
             {translation.buttons.login}
           </Button>
           <Group justify="space-between" mt="md">

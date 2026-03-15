@@ -8,12 +8,14 @@ import {
 } from "@mantine/core";
 import { useForm, isEmail, isNotEmpty } from "@mantine/form";
 import { IconArrowLeft } from "@tabler/icons-react";
+import { useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
 import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Register() {
   const translation = useTranslation();
+  const [loading, setLoading] = useState(false);
   const { register, userAttributes, setStage } = useAuth();
   const form = useForm({
     initialValues: {
@@ -27,6 +29,7 @@ export function Register() {
   });
 
   async function onSubmit() {
+    setLoading(true);
     try {
       await register(form.values);
       setStage("login");
@@ -41,11 +44,12 @@ export function Register() {
             form.setFieldError("password", reason.message);
             break;
           }
-          default: {
-            console.error(reason.name, reason.message);
-          }
+          default:
+            break;
         }
       }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -88,7 +92,7 @@ export function Register() {
               <Text ml={5}>{translation.links.backToLogin}</Text>
             </Center>
           </Anchor>
-          <Button type="submit">{translation.buttons.register}</Button>
+          <Button type="submit" loading={loading}>{translation.buttons.register}</Button>
         </Group>
       </form>
     </>

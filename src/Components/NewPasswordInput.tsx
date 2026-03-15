@@ -110,11 +110,7 @@ export function NewPasswordInput(props: NewPasswordInputProps) {
       );
     });
 
-  // required because showRequirements does not exist on PasswordInput
-  const passwordInputProps = {
-    ...props,
-    showRequirements: undefined,
-  };
+  const { showRequirements, ...passwordInputProps } = props;
 
   return (
     <Box>
@@ -124,7 +120,7 @@ export function NewPasswordInput(props: NewPasswordInputProps) {
         {bars}
       </Group>
 
-      {(props.showRequirements && touched) && (
+      {(showRequirements && touched) && (
         <Stack align="start" gap={0}>
           {checks}
         </Stack>

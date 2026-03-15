@@ -1,20 +1,18 @@
 import {
-  CognitoUser,
-  CognitoUserPool,
-  CognitoUserSession,
-  ISignUpResult,
-} from "amazon-cognito-identity-js";
+  SignInResult,
+} from "./cognito";
 
-import {createContext, ReactNode, useEffect} from "react";
+import { createContext, ReactNode, useEffect } from "react";
 
 import {
   confirmPasswordReset,
-  confirmSignUp,
-  getSession,
+  confirmRegistration,
+  confirmSignInWithCode,
+  confirmSignInWithNewPassword,
   getUserAttributes,
   getUserGroups,
   initUserPool,
-  newPasswordChallenge,
+  isSessionValid,
   passwordReset,
   resendAccountConfirmationCode,
   resendEmailConfirmationCode,
@@ -25,13 +23,7 @@ import {
   UserAttributes,
   verifyUserAttribute,
 } from "./cognito";
-import usePersistentState from "../Hooks/usePersitentState.ts";
-
-declare global {
-  interface Window {
-    MantineCognitoUserPool: CognitoUserPool;
-  }
-}
+import usePersistentState from "../Hooks/usePersistentState.ts";
 
 export interface RegisterProps {
   email: string;
@@ -56,17 +48,18 @@ export interface ConfirmForgotPasswordProps {
 export interface LoginProps {
   email: string;
   password: string;
-  totp?: string;
+}
+
+export interface ConfirmMFAProps {
+  code: string;
 }
 
 export interface ForcedPasswordResetProps {
-  cognitoUser: CognitoUser;
-  userAttributes: UserAttributes;
   password: string;
 }
 
 export interface VerifyAttributeProps {
-  userAttribute: string;
+  userAttribute: "email" | "phone_number";
   totp: string;
 }
 
@@ -77,24 +70,23 @@ export interface UpdateAttributesProps {
 type Stage = "login" | "register" | "forgotPassword";
 
 type State = {
-  getUser:  () => Promise<CognitoUser | null>;
+  isAuthenticated: boolean;
   allowRegistration: boolean;
   setStage: (stage: Stage) => void;
   stage: Stage;
   userGroups: string[];
   userAttributes: UserAttributes | null;
-  register: (props: RegisterProps) => Promise<ISignUpResult>;
+  register: (props: RegisterProps) => ReturnType<typeof signUp>;
   confirmRegistration: (props: ConfirmRegistrationProps) => Promise<void>;
   forgotPassword: (props: ForgotPasswordProps) => Promise<void>;
-  confirmForgotPassword: (props: ConfirmForgotPasswordProps) => Promise<string>;
-  forcedPasswordReset: (
-    props: ForcedPasswordResetProps,
-  ) => Promise<CognitoUserSession>;
-  verifyAttribute: (props: VerifyAttributeProps) => Promise<string>;
-  updateAttributes: (props: UpdateAttributesProps) => Promise<string>;
-  sendAccountConfirmationCode: () => Promise<string>;
-  sendEmailConfirmationCode: () => Promise<string>;
-  login: (props: LoginProps) => Promise<CognitoUser>;
+  confirmForgotPassword: (props: ConfirmForgotPasswordProps) => Promise<void>;
+  forcedPasswordReset: (props: ForcedPasswordResetProps) => Promise<SignInResult>;
+  confirmMFA: (props: ConfirmMFAProps) => Promise<SignInResult>;
+  verifyAttribute: (props: VerifyAttributeProps) => Promise<void>;
+  updateAttributes: (props: UpdateAttributesProps) => Promise<void>;
+  sendAccountConfirmationCode: (email: string) => Promise<void>;
+  sendEmailConfirmationCode: () => Promise<void>;
+  login: (props: LoginProps) => Promise<SignInResult>;
   logout: () => void;
   language: Language;
 };
@@ -115,70 +107,64 @@ const register = ({ email, password }: RegisterProps) => {
   return signUp(email, password);
 };
 
-const confirmRegistration = ({ email, totp }: ConfirmRegistrationProps) => {
-  return confirmSignUp(email, totp);
+const handleConfirmRegistration = async ({ email, totp }: ConfirmRegistrationProps) => {
+  await confirmRegistration(email, totp);
 };
 
 const forgotPassword = ({ email }: ForgotPasswordProps) => {
   return passwordReset(email);
 };
 
-const confirmForgotPassword = ({
+const handleConfirmForgotPassword = async ({
   email,
   totp,
   password,
 }: ConfirmForgotPasswordProps) => {
-  return confirmPasswordReset(email, totp, password);
+  await confirmPasswordReset(email, totp, password);
 };
 
-const login = async ({ email, password, totp }: LoginProps) => {
-  const cognitoUser = await signIn(email, password, totp);
-
+const login = async ({ email, password }: LoginProps) => {
+  const result = await signIn(email, password);
   document.dispatchEvent(new Event("mantine-cognito-session"));
+  return result;
+};
 
-  return cognitoUser;
+const confirmMFA = async ({ code }: ConfirmMFAProps) => {
+  const result = await confirmSignInWithCode(code);
+  document.dispatchEvent(new Event("mantine-cognito-session"));
+  return result;
 };
 
 const logout = async () => {
-  signOut();
-
+  await signOut();
   document.dispatchEvent(new Event("mantine-cognito-session"));
 };
 
-const forcedPasswordReset = async ({
-  cognitoUser,
-  password,
-}: ForcedPasswordResetProps) => {
-  const res = await newPasswordChallenge(cognitoUser, password);
-
+const forcedPasswordReset = async ({ password }: ForcedPasswordResetProps) => {
+  const result = await confirmSignInWithNewPassword(password);
   document.dispatchEvent(new Event("mantine-cognito-session"));
-
-  return res;
+  return result;
 };
 
-const verifyAttribute = async ({
+const handleVerifyAttribute = async ({
   userAttribute,
   totp,
 }: VerifyAttributeProps) => {
-  const res = await verifyUserAttribute(userAttribute, totp);
+  await verifyUserAttribute(userAttribute, totp);
   document.dispatchEvent(new Event("mantine-cognito-session"));
-
-  return res;
 };
 
-const sendAccountConfirmationCode = () => {
-  return resendAccountConfirmationCode();
+const handleSendAccountConfirmationCode = (email: string) => {
+  return resendAccountConfirmationCode(email);
 };
 
-const sendEmailConfirmationCode = () => {
+const handleSendEmailConfirmationCode = () => {
   return resendEmailConfirmationCode();
 };
 
-const updateAttributes = async ({ userAttributes }: UpdateAttributesProps) => {
-  const res = await updateUserAttributes(userAttributes);
+const handleUpdateAttributes = async ({ userAttributes }: UpdateAttributesProps) => {
+  await updateUserAttributes(userAttributes);
   document.dispatchEvent(new Event("mantine-cognito-session"));
-
-  return res;
 };
 
 export const AuthProvider = ({
@@ -194,66 +180,53 @@ export const AuthProvider = ({
   const [userAttributes, setUserAttributes] = usePersistentState<State["userAttributes"]>(null, "user-attr-state");
   const [userGroups, setUserGroups] = usePersistentState<State["userGroups"]>([], "user-group-state");
 
-  const getUser = async () => {
-    return getSession()
-        .then(async ({ authenticatedUser }) => {
-          return authenticatedUser;
-        })
-        .catch(() => {
-          return null;
-        });
+  const refreshSession = async () => {
+    try {
+      const valid = await isSessionValid();
+      if (valid) {
+        const [attrs, groups] = await Promise.all([getUserAttributes(), getUserGroups()]);
+        setUserAttributes(attrs);
+        setUserGroups(groups);
+      } else {
+        setUserAttributes(null);
+        setUserGroups([]);
+      }
+    } catch {
+      setUserAttributes(null);
+      setUserGroups([]);
+    }
   };
 
   useEffect(() => {
-    getSession()
-        .then(async () => {
-          // setAuthenticatedUser(authenticatedUser);
-              getUserAttributes().then(data => setUserAttributes(data));
-              getUserGroups().then(data => setUserGroups(data));
-        })
-        .catch(() => {
-          setUserAttributes(null);
-          setUserGroups([]);
-        });
+    refreshSession();
   }, []);
 
-  // Handling event listener
   useEffect(() => {
-    const evFunction = () => getSession()
-        .then(async () => {
-          getUserAttributes().then(data => setUserAttributes(data));
-          getUserGroups().then(data => setUserGroups(data));
-        })
-        .catch(() => {
-          setUserAttributes(null);
-          setUserGroups([]);
-        });
-
-    document.addEventListener("mantine-cognito-session", evFunction, false);
-
-    return () => document.removeEventListener("mantine-cognito-session", evFunction, false);
+    document.addEventListener("mantine-cognito-session", refreshSession, false);
+    return () => document.removeEventListener("mantine-cognito-session", refreshSession, false);
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
+        isAuthenticated: userAttributes !== null,
         allowRegistration,
         stage,
         setStage,
-        getUser,
         userAttributes,
         userGroups,
         register,
         login,
         logout,
-        confirmRegistration,
+        confirmMFA,
+        confirmRegistration: handleConfirmRegistration,
         forgotPassword,
-        confirmForgotPassword,
+        confirmForgotPassword: handleConfirmForgotPassword,
         forcedPasswordReset,
-        verifyAttribute,
-        sendAccountConfirmationCode,
-        sendEmailConfirmationCode,
-        updateAttributes,
+        verifyAttribute: handleVerifyAttribute,
+        sendAccountConfirmationCode: handleSendAccountConfirmationCode,
+        sendEmailConfirmationCode: handleSendEmailConfirmationCode,
+        updateAttributes: handleUpdateAttributes,
         language,
       }}
     >

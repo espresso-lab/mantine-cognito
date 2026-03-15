@@ -20,7 +20,7 @@ export function AuthWrapper({ children, headerSection, footerSection }: AuthWrap
   ) : (
     <Container size={420} my={40}>
 
-        {headerSection ?? <></>}
+        {headerSection}
 
         <Paper withBorder shadow="md" p={30} mt={30} radius="md">
             <Title ta="center">
@@ -42,7 +42,7 @@ export function AuthWrapper({ children, headerSection, footerSection }: AuthWrap
           {stage === "forgotPassword" && <ForgotPassword />}
         </Paper>
 
-        {footerSection ?? <></>}
+        {footerSection}
     </Container>
   );
 }

@@ -7,11 +7,11 @@ function App() {
   return (
     <MantineProvider>
       <MantineAuth
-        cognitoUserPoolId="eu-central-1_hTk8B9TeZ"
-        cognitoClientId="4f8lepkmgdmin6vein41gbhfh9"
+        cognitoUserPoolId={import.meta.env.VITE_COGNITO_USER_POOL_ID}
+        cognitoClientId={import.meta.env.VITE_COGNITO_CLIENT_ID}
         allowRegistration={true}
         headerSection={<Center>Example Company</Center>}
-        footerSection={<Text size={"xs"} p="md">Link to homepage</Text>}
+        footerSection={<Text size="xs" p="md">Link to homepage</Text>}
       >
         <SecureContent />
       </MantineAuth>
@@ -23,13 +23,11 @@ function SecureContent() {
   const { logout, userAttributes } = useAuth();
   const { email } = userAttributes || {};
 
-  console.log("userAttributes", userAttributes);
-
   return (
     <>
       <Text>Logged in as {email}</Text>
       <Button onClick={logout}>Logout</Button>
-      <MFASetup mfaAppName="test" />
+      <MFASetup mfaAppName="test" enablePasskeys />
     </>
   );
 }

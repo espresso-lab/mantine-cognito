@@ -7,6 +7,7 @@ export default {
         forgotPassword: "Reset",
         mfa: "Multi-Factor Authentication",
         deviceName: "Device Name",
+        passkeys: "Passkeys",
     },
     description: {
         login: "Log in to continue.",
@@ -30,10 +31,13 @@ export default {
         register: "Register",
         code: "Confirm",
         newPassword: "Confirm",
+        submit: "Submit",
         cancel: "Cancel",
         disableMFA: "Disable MFA",
         enableMFA: "Enable MFA",
         sendEmailCode: "Send email verification code",
+        addPasskey: "Add Passkey",
+        remove: "Remove",
     },
     links: {
         register: "Don't have an account?",
@@ -45,6 +49,7 @@ export default {
         scanQRCode: "Scan the QR code with your authenticator or ",
         copyCode: "to copy the code to the clipboard.",
         enterCode: "Enter the code in your authenticator to complete the setup.",
+        noPasskeys: "No passkeys registered.",
     },
     validation: {
         email: "Email address is invalid",

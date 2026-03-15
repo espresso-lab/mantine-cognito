@@ -7,6 +7,7 @@ export default {
     forgotPassword: "Zurücksetzen",
     mfa: "Multi-Faktor-Authentifizierung",
     deviceName: "Gerätename",
+    passkeys: "Passkeys",
   },
   description: {
     login: "Melde dich an, um fortzufahren.",
@@ -30,10 +31,13 @@ export default {
     register: "Registrieren",
     code: "Bestätigen",
     newPassword: "Bestätigen",
+    submit: "Absenden",
     cancel: "Abbrechen",
     disableMFA: "MFA deaktivieren",
     enableMFA: "MFA aktivieren",
     sendEmailCode: "Verifizierungscode an E-Mail senden",
+    addPasskey: "Passkey hinzufügen",
+    remove: "Entfernen",
   },
   links: {
     register: "Noch kein Konto?",
@@ -46,6 +50,7 @@ export default {
     copyCode: "um den Code in die Zwischenablage zu kopieren.",
     enterCode:
       "Gib den Code ein in deinen Authenticator ein, um die Einrichtung abzuschließen.",
+    noPasskeys: "Keine Passkeys registriert.",
   },
   validation: {
     email: "E-Mail-Adresse ist ungültig",

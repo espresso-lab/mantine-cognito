@@ -16,13 +16,16 @@ export function MantineAuth({
   cognitoClientId,
   allowRegistration = true,
   children,
-  language = 'en',
+  language = "en",
   headerSection,
   footerSection
 }: MantineAuthProps) {
   return (
     <AuthProvider
-      {...{ cognitoUserPoolId, cognitoClientId, allowRegistration, language }}
+      cognitoUserPoolId={cognitoUserPoolId}
+      cognitoClientId={cognitoClientId}
+      allowRegistration={allowRegistration}
+      language={language}
     >
       <AuthWrapper
           headerSection={headerSection}

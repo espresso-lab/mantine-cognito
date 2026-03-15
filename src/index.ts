@@ -4,6 +4,7 @@ export { useAuth } from "./Hooks/useAuth";
 export type {
   ConfirmForgotPasswordProps,
   ConfirmRegistrationProps,
+  ConfirmMFAProps,
   ForcedPasswordResetProps,
   ForgotPasswordProps,
   LoginProps,
@@ -12,4 +13,10 @@ export type {
   VerifyAttributeProps,
 } from "./Context/AuthContext";
 
-export { getIdToken, getAccessToken } from "./Context/cognito";
+export {
+  getIdToken,
+  getAccessToken,
+  registerPasskey,
+  getPasskeys,
+  removePasskey,
+} from "./Context/cognito";
