@@ -30,7 +30,7 @@ function App() {
       language="en"
     >
       <p>You are logged in!</p>
-      <MFASetup mfaAppName="Test" />
+      <MFASetup mfaAppName="Test" enablePasskeys />
     </MantineAuth>
   );
 }
@@ -38,7 +38,7 @@ function App() {
 export default App;
 ```
 
-In the example above, the `MantineAuth` component will handle the authentication flow with AWS Cognito. The `MFASetup` component will handle the MFA setup flow.
+In the example above, the `MantineAuth` component will handle the authentication flow with AWS Cognito. The `MFASetup` component will handle the MFA and Passkey setup flow.
 
 ### `useAuth()`-Hook
 
@@ -79,7 +79,7 @@ function App() {
       footerSection={<Text size={"xs"} p="md">Link to homepage</Text>}
     >
       <p>You are logged in!</p>
-      <MFASetup mfaAppName="Test" />
+      <MFASetup mfaAppName="Test" enablePasskeys />
     </MantineAuth>
   );
 }

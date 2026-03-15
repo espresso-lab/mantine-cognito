@@ -28,6 +28,7 @@ export default {
     },
     buttons: {
         login: "Login",
+        loginWithPasskey: "Login with Passkey",
         register: "Register",
         code: "Confirm",
         newPassword: "Confirm",
