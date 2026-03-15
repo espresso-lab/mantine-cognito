@@ -87,7 +87,6 @@ function App() {
 export default App;
 ```
 
-
 ### Backend authorization
 
 ```tsx
