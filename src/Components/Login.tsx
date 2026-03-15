@@ -20,7 +20,7 @@ import {useTranslation} from "../Hooks/useTranslation.ts";
 
 export function Login() {
   const translation = useTranslation();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"login" | "passkey" | false>(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
   const [newPasswordRequired, setNewPasswordRequired] = useState(false);
@@ -73,7 +73,7 @@ export function Login() {
   });
 
   async function onLogin() {
-    setLoading(true);
+    setLoading("login");
     try {
       const result = mfaRequired
         ? await confirmMFA({ code: mfaForm.values.totp ?? "" })
@@ -131,7 +131,7 @@ export function Login() {
   }
 
   async function onVerification() {
-    setLoading(true);
+    setLoading("login");
     try {
       await confirmRegistration({
         ...loginForm.values,
@@ -148,7 +148,7 @@ export function Login() {
   }
 
   async function onNewPassword() {
-    setLoading(true);
+    setLoading("login");
     try {
       await forcedPasswordReset(newPasswordForm.values);
       setStage("login");
@@ -163,7 +163,7 @@ export function Login() {
 
   async function onPasskeyLogin() {
     if (!loginForm.validateField("email").hasError) {
-      setLoading(true);
+      setLoading("passkey");
       try {
         const result = await loginWithPasskey(loginForm.values.email);
         if (result.nextStep === "CONFIRM_SIGN_IN_WITH_TOTP_CODE") {
@@ -215,7 +215,7 @@ export function Login() {
                 <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit" loading={loading}>{translation.buttons.code}</Button>
+            <Button type="submit" loading={loading === "login"}>{translation.buttons.code}</Button>
           </Group>
         </form>
       ) : verificationRequired ? (
@@ -256,7 +256,7 @@ export function Login() {
                 <Text ml={5}>{translation.links.backToLogin}</Text>
               </Center>
             </Anchor>
-            <Button type="submit" loading={loading}>{translation.buttons.code}</Button>
+            <Button type="submit" loading={loading === "login"}>{translation.buttons.code}</Button>
           </Group>
         </form>
       ) : newPasswordRequired ? (
@@ -270,7 +270,7 @@ export function Login() {
             {...newPasswordForm.getInputProps("password")}
               autoComplete="new-password"
           />
-          <Button type="submit" fullWidth mt="lg" loading={loading}>
+          <Button type="submit" fullWidth mt="lg" loading={loading === "login"}>
             {translation.buttons.newPassword}
           </Button>
         </form>
@@ -291,7 +291,7 @@ export function Login() {
             withAsterisk
             mt="md"
           />
-          <Button type="submit" fullWidth mt="lg" loading={loading}>
+          <Button type="submit" fullWidth mt="lg" loading={loading === "login"} disabled={loading === "passkey"}>
             {translation.buttons.login}
           </Button>
           <Divider my="md" />
@@ -300,7 +300,8 @@ export function Login() {
             variant="light"
             leftSection={<IconFingerprint size={20} />}
             onClick={onPasskeyLogin}
-            loading={loading}
+            loading={loading === "passkey"}
+            disabled={loading === "login"}
           >
             {translation.buttons.loginWithPasskey}
           </Button>

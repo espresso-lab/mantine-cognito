@@ -113,7 +113,18 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     }
   }, [mode, form.values.totp, form.errors.totp]);
 
-  const onStartEnable = () => {
+  const onStartEnable = async () => {
+    if (hasPasskeys) {
+      try {
+        for (const p of passkeys) {
+          await removePasskey(p.credentialId);
+        }
+        setPasskeys([]);
+      } catch (err: unknown) {
+        onError?.(formatError(err));
+        return;
+      }
+    }
     form.setFieldValue("totp", "");
     associateSoftwareToken()
       .then((code) => {
@@ -136,8 +147,14 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
       });
   };
 
+  const hasPasskeys = passkeys.length > 0;
+
   const onAddPasskey = async () => {
     try {
+      if (mode === "enabled") {
+        await disableMFA();
+        setMode("disabled");
+      }
       await registerPasskey();
       await loadPasskeys();
     } catch (err: unknown) {
@@ -214,7 +231,7 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
 
   return (
     <Paper maw={380}>
-      {mode === "disabled" && (
+      {mode === "disabled" && !hasPasskeys && (
         <Button color="green" onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
       )}
       {mode === "enabling" && enabling}
@@ -224,7 +241,7 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
         </Button>
       )}
 
-      {enablePasskeys && (
+      {enablePasskeys && mode !== "enabling" && mode !== "enabled" && (
         <Stack mt="lg" gap="sm">
           <Group justify="space-between">
             <Text fw={500}>{translation.title.passkeys}</Text>
