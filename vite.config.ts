@@ -3,7 +3,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 
-const ReactCompilerConfig = {};
 export default defineConfig({
   build: {
     lib: {
@@ -11,7 +10,7 @@ export default defineConfig({
       name: "MantineCognito",
       fileName: (format) => `index.${format}.js`,
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [
         "react",
         "react-dom",
@@ -35,11 +34,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler", ReactCompilerConfig]],
-      },
-    }),
+    react(),
     dts(),
   ],
   resolve: {
