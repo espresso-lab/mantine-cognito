@@ -162,7 +162,7 @@ export function Login() {
   }
 
   async function onPasskeyLogin() {
-    if (!loginForm.validateField("email").hasError) {
+    if (!(await loginForm.validateField("email")).hasError) {
       setLoading("passkey");
       try {
         const result = await loginWithPasskey(loginForm.values.email);
