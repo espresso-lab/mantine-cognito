@@ -7,8 +7,8 @@ function tablerIconsResolve(): Plugin {
   return {
     name: "tabler-icons-resolve",
     enforce: "pre",
-    resolveId(id) {
-      if (id === "@tabler/icons-react") return { id: "@tabler/icons-react/dist/esm/icons/index.mjs", external: false };
+    async resolveId(id) {
+      if (id === "@tabler/icons-react") return this.resolve("@tabler/icons-react/dist/esm/icons/index.mjs");
     },
   };
 }
