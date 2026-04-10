@@ -1,7 +1,17 @@
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "unplugin-dts/vite";
+
+function tablerIconsResolve(): Plugin {
+  return {
+    name: "tabler-icons-resolve",
+    enforce: "pre",
+    resolveId(id) {
+      if (id === "@tabler/icons-react") return { id: "@tabler/icons-react/dist/esm/icons/index.mjs", external: false };
+    },
+  };
+}
 
 export default defineConfig({
   build: {
@@ -33,13 +43,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tablerIconsResolve(),
     dts({ tsconfigPath: "./tsconfig.build.json" }),
   ],
-  resolve: {
-    alias: {
-      // /esm/icons/index.mjs only exports the icons statically, so no separate chunks are created
-      // https://github.com/tabler/tabler-icons/issues/1233#issuecomment-2428245119
-      "@tabler/icons-react": "@tabler/icons-react/dist/esm/icons/index.mjs",
-    },
-  },
 });
