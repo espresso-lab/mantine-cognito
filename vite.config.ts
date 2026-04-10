@@ -12,12 +12,10 @@ export default defineConfig({
     },
     rolldownOptions: {
       external: [
-        "react",
-        "react-dom",
-        "@mantine/core",
-        "@mantine/hooks",
-        "@mantine/form",
-        "@tabler/icons-react",
+        /^react(\/.*)?$/,
+        /^react-dom(\/.*)?$/,
+        /^@mantine\//,
+        /^@tabler\/icons-react/,
       ],
       output: {
         globals: {
