@@ -1,17 +1,7 @@
 import path from "path";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "unplugin-dts/vite";
-
-function tablerIconsResolve(): Plugin {
-  return {
-    name: "tabler-icons-resolve",
-    enforce: "pre",
-    async resolveId(id) {
-      if (id === "@tabler/icons-react") return this.resolve("@tabler/icons-react/dist/esm/icons/index.mjs");
-    },
-  };
-}
 
 export default defineConfig({
   build: {
@@ -43,7 +33,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    tablerIconsResolve(),
     dts({ tsconfigPath: "./tsconfig.build.json" }),
   ],
 });
