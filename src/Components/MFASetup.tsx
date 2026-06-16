@@ -25,8 +25,8 @@ import {
   removePasskey,
 } from "../Context/cognito";
 import { QRCode } from "./QRCode";
-import {useTranslation} from "../Hooks/useTranslation.ts";
-import {IconArrowLeft, IconFingerprint, IconTrash} from "@tabler/icons-react";
+import { useTranslation } from "../Hooks/useTranslation.ts";
+import { IconArrowLeft, IconFingerprint, IconTrash } from "@tabler/icons-react";
 
 interface WebAuthnCredential {
   credentialId: string;
@@ -41,36 +41,21 @@ export interface MFASetupProps {
   onError?: (error: string) => void;
 }
 
+function formatError(err: unknown): string {
+  const error = err as Error & { code?: string; underlyingError?: Error };
+  const message = error.underlyingError?.message ?? error.message ?? JSON.stringify(err);
+  return `${error.name ?? "Error"}: ${message}${error.code ? ` (${error.code})` : ""}`;
+}
+
 export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisable, onError }: MFASetupProps) {
-    const translation = useTranslation();
+  const translation = useTranslation();
   const clipboard = useClipboard();
-  const [mode, setMode] = useState<"disabled" | "enabling" | "enabled">(
-    "disabled",
-  );
+  const [mode, setMode] = useState<"disabled" | "enabling" | "enabled">("disabled");
   const [code, setCode] = useState<string>();
   const [email, setEmail] = useState<string>();
   const [passkeys, setPasskeys] = useState<WebAuthnCredential[]>([]);
 
-  const form = useForm({
-    initialValues: {
-      totp: "",
-    },
-  });
-
-  const formatError = (err: unknown): string => {
-    const error = err as Error & { code?: string; underlyingError?: Error };
-    const message = error.underlyingError?.message ?? error.message ?? JSON.stringify(err);
-    return `${error.name ?? "Error"}: ${message}${error.code ? ` (${error.code})` : ""}`;
-  };
-
-  const loadPasskeys = async () => {
-    try {
-      const result = await getPasskeys();
-      setPasskeys(result.credentials as WebAuthnCredential[]);
-    } catch {
-      setPasskeys([]);
-    }
-  };
+  const form = useForm({ initialValues: { totp: "" } });
 
   useEffect(() => {
     getMFAPreference()
@@ -81,44 +66,45 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
 
     getUserAttributes()
       .then((attrs) => {
-        setEmail(attrs.email as string);
+        if (typeof attrs.email === "string") setEmail(attrs.email);
       })
       .catch(() => {});
 
     if (enablePasskeys) {
-      loadPasskeys();
+      getPasskeys()
+        .then((result) => setPasskeys(result.credentials as WebAuthnCredential[]))
+        .catch(() => setPasskeys([]));
     }
   }, [enablePasskeys]);
 
-  useEffect(() => {
-    if (
-      mode === "enabling" &&
-      form.values.totp.length === 6 &&
-      !form.errors.totp
-    ) {
-      verifySoftwareToken(form.values.totp)
-        .then(() => {
-          enableMFA()
-            .then(() => {
-              setMode("enabled");
-              onEnable?.();
-            })
-            .catch((err) => {
-              onError?.(formatError(err));
-            });
-        })
-        .catch((err: Error) => {
-          form.setFieldError("totp", err.message);
-        });
+  const loadPasskeys = async () => {
+    try {
+      const result = await getPasskeys();
+      setPasskeys(result.credentials as WebAuthnCredential[]);
+    } catch {
+      setPasskeys([]);
     }
-  }, [mode, form.values.totp, form.errors.totp]);
+  };
+
+  const onVerifyTotp = async (totpCode: string) => {
+    try {
+      await verifySoftwareToken(totpCode);
+      await enableMFA();
+      setMode("enabled");
+      onEnable?.();
+    } catch (err) {
+      if (err instanceof Error) {
+        form.setFieldError("totp", err.message);
+      } else {
+        onError?.(formatError(err));
+      }
+    }
+  };
 
   const onStartEnable = async () => {
-    if (hasPasskeys) {
+    if (passkeys.length > 0) {
       try {
-        for (const p of passkeys) {
-          await removePasskey(p.credentialId);
-        }
+        for (const p of passkeys) await removePasskey(p.credentialId);
         setPasskeys([]);
       } catch (err: unknown) {
         onError?.(formatError(err));
@@ -127,13 +113,11 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     }
     form.setFieldValue("totp", "");
     associateSoftwareToken()
-      .then((code) => {
-        setCode(code);
+      .then((secret) => {
+        setCode(secret);
         setMode("enabling");
       })
-      .catch((err: unknown) => {
-        onError?.(formatError(err));
-      });
+      .catch((err: unknown) => onError?.(formatError(err)));
   };
 
   const onDisableHandler = () => {
@@ -142,12 +126,8 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
         setMode("disabled");
         onDisable?.();
       })
-      .catch((err: unknown) => {
-        onError?.(formatError(err));
-      });
+      .catch((err: unknown) => onError?.(formatError(err)));
   };
-
-  const hasPasskeys = passkeys.length > 0;
 
   const onAddPasskey = async () => {
     try {
@@ -171,70 +151,72 @@ export function MFASetup({ mfaAppName, enablePasskeys = false, onEnable, onDisab
     }
   };
 
-  const emailPart = email ? encodeURIComponent(`${mfaAppName}:${email}`) : encodeURIComponent(mfaAppName);
-  const value = code ? `otpauth://totp/${emailPart}?secret=${code}&issuer=${encodeURIComponent(mfaAppName)}` : "";
-  const enabling =
-    code !== undefined ? (
-      <form>
-        <Text size="sm" ta="center">
-          {translation.texts.scanQRCode}
-          <Anchor
-            size="sm"
-            onClick={() => {
-              clipboard.copy(code);
-            }}
-          >
-            {translation.links.clickHere}
-          </Anchor>{" "}
-          {translation.texts.copyCode}
-        </Text>
-        <Center mt="lg">
-          <QRCode value={value} />
-        </Center>
-        <Text size="sm" ta="center" mt="lg">
-          {translation.texts.enterCode}
-        </Text>
-        <Box mt="md">
-          <InputLabel required>{translation.title.mfa}</InputLabel>
-          <Center>
-            <PinInput
-              oneTimeCode
-              type="number"
-              size="md"
-              length={6}
-              {...form.getInputProps("totp")}
-            />
-          </Center>
-          <Text c="red" size="xs">
-            {form.errors.totp}
-          </Text>
-        </Box>
-        <Button
-          fullWidth
-          color="gray"
-          leftSection={<IconArrowLeft size={14} />}
-          variant="outline"
-          mt="lg"
-          onClick={() => {
-            setCode(undefined);
-            setMode("disabled");
-          }}
-        >
-          {translation.buttons.cancel}
-        </Button>
-      </form>
-    ) : (
-      <Text size="sm" c="red">
-        {translation.errors.noCode}
-      </Text>
-    );
+  const emailPart = email
+    ? encodeURIComponent(`${mfaAppName}:${email}`)
+    : encodeURIComponent(mfaAppName);
+  const otpAuthUrl = code
+    ? `otpauth://totp/${emailPart}?secret=${code}&issuer=${encodeURIComponent(mfaAppName)}`
+    : "";
 
   return (
     <Paper maw={380}>
-      {mode === "disabled" && !hasPasskeys && (
+      {mode === "disabled" && passkeys.length === 0 && (
         <Button color="green" onClick={onStartEnable}>{translation.buttons.enableMFA}</Button>
       )}
-      {mode === "enabling" && enabling}
+
+      {mode === "enabling" && (
+        code ? (
+          <form>
+            <Text size="sm" ta="center">
+              {translation.texts.scanQRCode}
+              <Anchor size="sm" onClick={() => clipboard.copy(code)}>
+                {translation.links.clickHere}
+              </Anchor>{" "}
+              {translation.texts.copyCode}
+            </Text>
+            <Center mt="lg">
+              <QRCode value={otpAuthUrl} />
+            </Center>
+            <Text size="sm" ta="center" mt="lg">
+              {translation.texts.enterCode}
+            </Text>
+            <Box mt="md">
+              <InputLabel required>{translation.title.mfa}</InputLabel>
+              <Center>
+                <PinInput
+                  oneTimeCode
+                  type="number"
+                  size="md"
+                  length={6}
+                  onComplete={onVerifyTotp}
+                  {...form.getInputProps("totp")}
+                />
+              </Center>
+              <Text c="red" size="xs">
+                {form.errors.totp}
+              </Text>
+            </Box>
+            <Button
+              fullWidth
+              color="gray"
+              leftSection={<IconArrowLeft size={14} />}
+              variant="outline"
+              mt="lg"
+              onClick={() => {
+                setCode(undefined);
+                setMode("disabled");
+              }}
+            >
+              {translation.buttons.cancel}
+            </Button>
+          </form>
+        ) : (
+          <Text size="sm" c="red">
+            {translation.errors.noCode}
+          </Text>
+        )
+      )}
+
       {mode === "enabled" && (
         <Button color="red" onClick={onDisableHandler}>
           {translation.buttons.disableMFA}

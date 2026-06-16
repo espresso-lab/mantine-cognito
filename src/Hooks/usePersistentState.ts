@@ -14,7 +14,9 @@ export default function usePersistentState<T>(initialValue: T, key: string): [T,
         setState(newState);
         try {
             localStorage.setItem(`use_persistent_storage_${key}`, JSON.stringify(newState));
-        } catch { }
+        } catch {
+            void 0;
+        }
     };
 
     return [state, setStateWrapper];

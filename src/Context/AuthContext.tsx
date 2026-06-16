@@ -1,12 +1,8 @@
-import {
-  SignInResult,
-} from "./cognito";
-
-import { createContext, ReactNode, useEffect } from "react";
-
+import { SignInResult } from "./cognito";
+import { createContext, ReactNode, useEffect, useState } from "react";
 import {
   confirmPasswordReset,
-  confirmRegistration,
+  confirmRegistration as cognitoConfirmRegistration,
   confirmSignInWithCode,
   confirmSignInWithNewPassword,
   getUserAttributes,
@@ -105,75 +101,25 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const register = ({ email, password }: RegisterProps) => {
-  return signUp(email, password);
-};
-
-const handleConfirmRegistration = async ({ email, totp }: ConfirmRegistrationProps) => {
-  await confirmRegistration(email, totp);
-};
-
-const forgotPassword = ({ email }: ForgotPasswordProps) => {
-  return passwordReset(email);
-};
-
-const handleConfirmForgotPassword = async ({
-  email,
-  totp,
-  password,
-}: ConfirmForgotPasswordProps) => {
-  await confirmPasswordReset(email, totp, password);
-};
-
-const login = async ({ email, password }: LoginProps) => {
-  const result = await signIn(email, password);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-  return result;
-};
-
-const loginWithPasskey = async (email: string) => {
-  const result = await signInWithPasskey(email);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-  return result;
-};
-
-const confirmMFA = async ({ code }: ConfirmMFAProps) => {
-  const result = await confirmSignInWithCode(code);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-  return result;
-};
-
-const logout = async () => {
-  await signOut();
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-};
-
-const forcedPasswordReset = async ({ password }: ForcedPasswordResetProps) => {
-  const result = await confirmSignInWithNewPassword(password);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-  return result;
-};
-
-const handleVerifyAttribute = async ({
-  userAttribute,
-  totp,
-}: VerifyAttributeProps) => {
-  await verifyUserAttribute(userAttribute, totp);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-};
-
-const handleSendAccountConfirmationCode = (email: string) => {
-  return resendAccountConfirmationCode(email);
-};
-
-const handleSendEmailConfirmationCode = () => {
-  return resendEmailConfirmationCode();
-};
-
-const handleUpdateAttributes = async ({ userAttributes }: UpdateAttributesProps) => {
-  await updateUserAttributes(userAttributes);
-  document.dispatchEvent(new Event("mantine-cognito-session"));
-};
+async function loadSession(
+  setUserAttributes: (v: UserAttributes | null) => void,
+  setUserGroups: (v: string[]) => void,
+) {
+  try {
+    const valid = await isSessionValid();
+    if (valid) {
+      const [attrs, groups] = await Promise.all([getUserAttributes(), getUserGroups()]);
+      setUserAttributes(attrs);
+      setUserGroups(groups);
+    } else {
+      setUserAttributes(null);
+      setUserGroups([]);
+    }
+  } catch {
+    setUserAttributes(null);
+    setUserGroups([]);
+  }
+}
 
 export const AuthProvider = ({
   children,
@@ -184,35 +130,54 @@ export const AuthProvider = ({
 }: AuthProviderProps) => {
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
-  const [stage, setStage] = usePersistentState<State["stage"]>("login", "login-state");
-  const [userAttributes, setUserAttributes] = usePersistentState<State["userAttributes"]>(null, "user-attr-state");
-  const [userGroups, setUserGroups] = usePersistentState<State["userGroups"]>([], "user-group-state");
+  const [stage, setStage] = useState<Stage>("login");
+  const [userAttributes, setUserAttributes] = usePersistentState<UserAttributes | null>(null, "user-attr-state");
+  const [userGroups, setUserGroups] = usePersistentState<string[]>([], "user-group-state");
 
-  const refreshSession = async () => {
-    try {
-      const valid = await isSessionValid();
-      if (valid) {
-        const [attrs, groups] = await Promise.all([getUserAttributes(), getUserGroups()]);
-        setUserAttributes(attrs);
-        setUserGroups(groups);
-      } else {
-        setUserAttributes(null);
-        setUserGroups([]);
-      }
-    } catch {
-      setUserAttributes(null);
-      setUserGroups([]);
-    }
+  useEffect(() => {
+    loadSession(setUserAttributes, setUserGroups);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const login = async ({ email, password }: LoginProps) => {
+    const result = await signIn(email, password);
+    await loadSession(setUserAttributes, setUserGroups);
+    return result;
   };
 
-  useEffect(() => {
-    refreshSession();
-  }, []);
+  const loginWithPasskey = async (email: string) => {
+    const result = await signInWithPasskey(email);
+    await loadSession(setUserAttributes, setUserGroups);
+    return result;
+  };
 
-  useEffect(() => {
-    document.addEventListener("mantine-cognito-session", refreshSession, false);
-    return () => document.removeEventListener("mantine-cognito-session", refreshSession, false);
-  }, []);
+  const confirmMFA = async ({ code }: ConfirmMFAProps) => {
+    const result = await confirmSignInWithCode(code);
+    await loadSession(setUserAttributes, setUserGroups);
+    return result;
+  };
+
+  const logout = async () => {
+    await signOut();
+    setUserAttributes(null);
+    setUserGroups([]);
+  };
+
+  const forcedPasswordReset = async ({ password }: ForcedPasswordResetProps) => {
+    const result = await confirmSignInWithNewPassword(password);
+    await loadSession(setUserAttributes, setUserGroups);
+    return result;
+  };
+
+  const verifyAttribute = async ({ userAttribute, totp }: VerifyAttributeProps) => {
+    await verifyUserAttribute(userAttribute, totp);
+    await loadSession(setUserAttributes, setUserGroups);
+  };
+
+  const updateAttributes = async ({ userAttributes: attrs }: UpdateAttributesProps) => {
+    await updateUserAttributes(attrs);
+    await loadSession(setUserAttributes, setUserGroups);
+  };
 
   return (
     <AuthContext.Provider
@@ -223,19 +188,19 @@ export const AuthProvider = ({
         setStage,
         userAttributes,
         userGroups,
-        register,
+        register: ({ email, password }) => signUp(email, password),
+        confirmRegistration: ({ email, totp }) => cognitoConfirmRegistration(email, totp),
+        forgotPassword: ({ email }) => passwordReset(email),
+        confirmForgotPassword: ({ email, totp, password }) => confirmPasswordReset(email, totp, password),
+        sendAccountConfirmationCode: resendAccountConfirmationCode,
+        sendEmailConfirmationCode: resendEmailConfirmationCode,
         login,
         loginWithPasskey,
         logout,
         confirmMFA,
-        confirmRegistration: handleConfirmRegistration,
-        forgotPassword,
-        confirmForgotPassword: handleConfirmForgotPassword,
         forcedPasswordReset,
-        verifyAttribute: handleVerifyAttribute,
-        sendAccountConfirmationCode: handleSendAccountConfirmationCode,
-        sendEmailConfirmationCode: handleSendEmailConfirmationCode,
-        updateAttributes: handleUpdateAttributes,
+        verifyAttribute,
+        updateAttributes,
         language,
       }}
     >

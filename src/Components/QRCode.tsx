@@ -9,54 +9,50 @@ import QRCodeStyling, {
   Options,
   TypeNumber,
 } from "qr-code-styling";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 interface QRCodeProps {
   value?: string;
   options?: Options;
 }
 
+const DEFAULT_OPTIONS: Options = {
+  width: 300,
+  height: 300,
+  type: "svg" as DrawType,
+  qrOptions: {
+    typeNumber: 0 as TypeNumber,
+    mode: "Byte" as Mode,
+    errorCorrectionLevel: "Q" as ErrorCorrectionLevel,
+  },
+  dotsOptions: {
+    color: "var(--mantine-color-text)",
+    type: "dots" as DotType,
+  },
+  backgroundOptions: {
+    color: "transparent",
+  },
+  cornersSquareOptions: {
+    color: "var(--mantine-color-immoself-outline)",
+    type: "extra-rounded" as CornerSquareType,
+  },
+  cornersDotOptions: {
+    color: "var(--mantine-color-immoself-outline)",
+    type: "dot" as CornerDotType,
+  },
+};
+
 export function QRCode({ value, options }: QRCodeProps) {
-  const mergedOptions = useMemo<Options>(() => ({
-    width: 300,
-    height: 300,
-    type: "svg" as DrawType,
-    data: value,
-    qrOptions: {
-      typeNumber: 0 as TypeNumber,
-      mode: "Byte" as Mode,
-      errorCorrectionLevel: "Q" as ErrorCorrectionLevel,
-    },
-    dotsOptions: {
-      color: "var(--mantine-color-text)",
-      type: "dots" as DotType,
-    },
-    backgroundOptions: {
-      color: "transparent",
-    },
-    cornersSquareOptions: {
-      color: "var(--mantine-color-immoself-outline)",
-      type: "extra-rounded" as CornerSquareType,
-    },
-    cornersDotOptions: {
-      color: "var(--mantine-color-immoself-outline)",
-      type: "dot" as CornerDotType,
-    },
-    ...options,
-  }), [value, options]);
-
   const ref = useRef<HTMLDivElement>(null);
-  const qrCode = useMemo(() => new QRCodeStyling(mergedOptions), []);
+  const qrCode = useRef(new QRCodeStyling({ ...DEFAULT_OPTIONS, data: value, ...options }));
 
   useEffect(() => {
-    if (ref.current) {
-      qrCode.append(ref.current);
-    }
-  }, [qrCode]);
+    if (ref.current) qrCode.current.append(ref.current);
+  }, []);
 
   useEffect(() => {
-    qrCode.update(mergedOptions);
-  }, [qrCode, mergedOptions]);
+    qrCode.current.update({ ...DEFAULT_OPTIONS, data: value, ...options });
+  }, [value, options]);
 
   return <Box ref={ref} />;
 }

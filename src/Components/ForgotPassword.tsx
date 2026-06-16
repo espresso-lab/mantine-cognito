@@ -14,15 +14,18 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { useAuth } from "../Hooks/useAuth";
-import {useTranslation} from "../Hooks/useTranslation.ts";
+import { useTranslation } from "../Hooks/useTranslation.ts";
+
+type ForgotPasswordStep = "email" | "reset";
 
 export function ForgotPassword() {
   const { forgotPassword, confirmForgotPassword, setStage } = useAuth();
   const translation = useTranslation();
 
   const [loading, setLoading] = useState(false);
-  const [nextStage, setNextStage] = useState(false);
-  const forgotPasswordForm = useForm({
+  const [step, setStep] = useState<ForgotPasswordStep>("email");
+
+  const emailForm = useForm({
     initialValues: {
       email: "",
     },
@@ -31,7 +34,7 @@ export function ForgotPassword() {
     },
   });
 
-  const newPasswordForm = useForm({
+  const resetForm = useForm({
     initialValues: {
       totp: "",
       password: "",
@@ -42,46 +45,36 @@ export function ForgotPassword() {
     },
   });
 
-  async function onForgotPassword() {
+  async function onRequestReset() {
     setLoading(true);
     try {
-      await forgotPassword(forgotPasswordForm.values);
-      setNextStage(true);
+      await forgotPassword(emailForm.values);
+      setStep("reset");
     } catch (reason) {
       if (reason instanceof Error) {
-        switch (reason.name) {
-          case "UserNotFoundException": {
-            forgotPasswordForm.setFieldError("email", reason.message);
-            break;
-          }
-          default: {
-            forgotPasswordForm.setFieldError("email", reason.message);
-          }
-        }
+        emailForm.setFieldError("email", reason.message);
       }
     } finally {
       setLoading(false);
     }
   }
 
-  async function onNewPassword() {
+  async function onConfirmReset() {
     setLoading(true);
     try {
       await confirmForgotPassword({
-        ...forgotPasswordForm.values,
-        ...newPasswordForm.values,
+        ...emailForm.values,
+        ...resetForm.values,
       });
       setStage("login");
     } catch (reason) {
       if (reason instanceof Error) {
         switch (reason.name) {
-          case "CodeMismatchException": {
-            newPasswordForm.setFieldError("totp", reason.message);
+          case "CodeMismatchException":
+            resetForm.setFieldError("totp", reason.message);
             break;
-          }
-          default: {
-            newPasswordForm.setFieldError("password", reason.message);
-          }
+          default:
+            resetForm.setFieldError("password", reason.message);
         }
       }
     } finally {
@@ -89,77 +82,77 @@ export function ForgotPassword() {
     }
   }
 
-  return (
-    <>
-      {nextStage ? (
-        <form onSubmit={newPasswordForm.onSubmit(onNewPassword)}>
-          <Box>
-            <InputLabel required>{translation.title.mfa}</InputLabel>
-            <Center>
-              <PinInput
-                oneTimeCode
-                type="number"
-                size="md"
-                length={6}
-                autoFocus={nextStage}
-                {...newPasswordForm.getInputProps("totp")}
-              />
+  if (step === "reset") {
+    return (
+      <form onSubmit={resetForm.onSubmit(onConfirmReset)}>
+        <Box>
+          <InputLabel required>{translation.title.mfa}</InputLabel>
+          <Center>
+            <PinInput
+              oneTimeCode
+              type="number"
+              size="md"
+              length={6}
+              autoFocus
+              {...resetForm.getInputProps("totp")}
+            />
+          </Center>
+          <Text c="red" size="xs">
+            {resetForm.errors.totp}
+          </Text>
+        </Box>
+        <NewPasswordInput
+          label={translation.fields.newPassword}
+          placeholder={translation.placeholders.newPassword}
+          withAsterisk
+          autoComplete="new-password"
+          {...resetForm.getInputProps("password")}
+        />
+        <Group justify="space-between" mt="lg">
+          <Anchor
+            onClick={() => {
+              resetForm.reset();
+              setStage("login");
+            }}
+            c="dimmed"
+            size="sm"
+          >
+            <Center inline>
+              <IconArrowLeft size={20} />
+              <Text ml={5}>{translation.links.backToLogin}</Text>
             </Center>
-            <Text c="red" size="xs">
-              {newPasswordForm.errors.totp}
-            </Text>
-          </Box>
-          <NewPasswordInput
-            label={translation.fields.newPassword}
-            placeholder={translation.placeholders.newPassword}
-            {...newPasswordForm.getInputProps("password")}
-            withAsterisk
-            autoComplete="new-password"
-          />
-          <Group justify="space-between" mt="lg">
-            <Anchor
-              onClick={() => {
-                newPasswordForm.reset();
-                setStage("login");
-              }}
-              c="dimmed"
-              size="sm"
-            >
-              <Center inline>
-                <IconArrowLeft size={20} />
-                <Text ml={5}>{translation.links.backToLogin}</Text>
-              </Center>
-            </Anchor>
-            <Button type="submit" loading={loading}>{translation.buttons.newPassword}</Button>
-          </Group>
-        </form>
-      ) : (
-        <form onSubmit={forgotPasswordForm.onSubmit(onForgotPassword)}>
-          <TextInput
-            label={translation.fields.email}
-            placeholder={translation.placeholders.email}
-            withAsterisk
-            autoComplete="username"
-            {...forgotPasswordForm.getInputProps("email")}
-          />
-          <Group justify="space-between" mt="lg">
-            <Anchor
-              onClick={() => {
-                forgotPasswordForm.reset();
-                setStage("login");
-              }}
-              c="dimmed"
-              size="sm"
-            >
-              <Center inline>
-                <IconArrowLeft size={20} />
-                <Text ml={5}>{translation.links.backToLogin}</Text>
-              </Center>
-            </Anchor>
-            <Button type="submit" loading={loading}>{translation.buttons.submit}</Button>
-          </Group>
-        </form>
-      )}
-    </>
+          </Anchor>
+          <Button type="submit" loading={loading}>{translation.buttons.newPassword}</Button>
+        </Group>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={emailForm.onSubmit(onRequestReset)}>
+      <TextInput
+        label={translation.fields.email}
+        placeholder={translation.placeholders.email}
+        withAsterisk
+        autoComplete="username"
+        {...emailForm.getInputProps("email")}
+      />
+      <Group justify="space-between" mt="lg">
+        <Anchor
+          onClick={() => {
+            emailForm.reset();
+            setStage("login");
+          }}
+          c="dimmed"
+          size="sm"
+        >
+          <Center inline>
+            <IconArrowLeft size={20} />
+            <Text ml={5}>{translation.links.backToLogin}</Text>
+          </Center>
+        </Anchor>
+        <Button type="submit" loading={loading}>{translation.buttons.submit}</Button>
+      </Group>
+    </form>
   );
 }
