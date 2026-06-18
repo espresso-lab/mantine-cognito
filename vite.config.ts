@@ -1,6 +1,7 @@
 import path from "path";
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
 import dts from "unplugin-dts/vite";
 
 export default defineConfig({
@@ -33,6 +34,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    babel({ presets: [reactCompilerPreset()] }),
     dts({ tsconfigPath: "./tsconfig.build.json" }),
   ],
 });
