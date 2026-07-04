@@ -1,5 +1,6 @@
 export { MantineAuth } from "./Components/MantineAuth";
 export { MFASetup } from "./Components/MFASetup";
+export type { MfaConfig } from "./Components/MfaNudge";
 export { useAuth } from "./Hooks/useAuth";
 export type {
   ConfirmForgotPasswordProps,

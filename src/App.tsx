@@ -10,6 +10,7 @@ function App() {
         cognitoUserPoolId={import.meta.env.VITE_COGNITO_USER_POOL_ID}
         cognitoClientId={import.meta.env.VITE_COGNITO_CLIENT_ID}
         allowRegistration={true}
+        mfa={{ appName: "Example Company", enablePasskeys: true }}
         headerSection={<Center>Example Company</Center>}
         footerSection={<Text size="xs" p="md">Link to homepage</Text>}
       >

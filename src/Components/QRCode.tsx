@@ -33,11 +33,11 @@ const DEFAULT_OPTIONS: Options = {
     color: "transparent",
   },
   cornersSquareOptions: {
-    color: "var(--mantine-color-immoself-outline)",
+    color: "var(--mantine-primary-color-filled)",
     type: "extra-rounded" as CornerSquareType,
   },
   cornersDotOptions: {
-    color: "var(--mantine-color-immoself-outline)",
+    color: "var(--mantine-primary-color-filled)",
     type: "dot" as CornerDotType,
   },
 };

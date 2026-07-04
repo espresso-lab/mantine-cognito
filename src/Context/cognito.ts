@@ -64,18 +64,48 @@ function convertAttributes(attrs: FetchUserAttributesOutput): UserAttributes {
   );
 }
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+const PASSKEY_HINT_KEY = "mantine-cognito.passkey-email";
+
+export function getPasskeyHint(): string | null {
+  try {
+    return localStorage.getItem(PASSKEY_HINT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setPasskeyHint(email: string) {
+  try {
+    localStorage.setItem(PASSKEY_HINT_KEY, normalizeEmail(email));
+  } catch {
+    void 0;
+  }
+}
+
+export function clearPasskeyHint() {
+  try {
+    localStorage.removeItem(PASSKEY_HINT_KEY);
+  } catch {
+    void 0;
+  }
+}
+
 export async function signUp(email: string, password: string) {
   return amplifySignUp({
-    username: email.toLowerCase(),
+    username: normalizeEmail(email),
     password,
-    options: { userAttributes: { email: email.toLowerCase() } },
+    options: { userAttributes: { email: normalizeEmail(email) } },
   });
 }
 
 export async function signIn(email: string, password: string): Promise<SignInResult> {
   await amplifySignOut().catch(() => {});
   const { isSignedIn, nextStep } = await amplifySignIn({
-    username: email.toLowerCase(),
+    username: normalizeEmail(email),
     password,
   });
   return {
@@ -87,12 +117,15 @@ export async function signIn(email: string, password: string): Promise<SignInRes
 export async function signInWithPasskey(email: string): Promise<SignInResult> {
   await amplifySignOut().catch(() => {});
   const { isSignedIn, nextStep } = await amplifySignIn({
-    username: email.toLowerCase(),
+    username: normalizeEmail(email),
     options: {
       authFlowType: "USER_AUTH",
       preferredChallenge: "WEB_AUTHN",
     },
   });
+  if (isSignedIn) {
+    setPasskeyHint(email);
+  }
   return {
     isSignedIn,
     nextStep: nextStep.signInStep as SignInNextStep,
@@ -120,7 +153,11 @@ export async function confirmSignInWithNewPassword(password: string): Promise<Si
 }
 
 export async function signOut() {
-  await amplifySignOut({ global: true });
+  try {
+    await amplifySignOut({ global: true });
+  } catch {
+    await amplifySignOut();
+  }
 }
 
 export async function isSessionValid() {
@@ -144,11 +181,11 @@ export async function getUserAttributes(): Promise<UserAttributes> {
 }
 
 export async function confirmRegistration(email: string, code: string) {
-  await confirmSignUp({ username: email.toLowerCase(), confirmationCode: code });
+  await confirmSignUp({ username: normalizeEmail(email), confirmationCode: code });
 }
 
 export async function resendAccountConfirmationCode(email: string) {
-  await resendSignUpCode({ username: email.toLowerCase() });
+  await resendSignUpCode({ username: normalizeEmail(email) });
 }
 
 export async function resendEmailConfirmationCode() {
@@ -163,12 +200,12 @@ export async function updateUserAttributes(attributes: UserAttributes) {
 }
 
 export async function passwordReset(email: string) {
-  await resetPassword({ username: email.toLowerCase() });
+  await resetPassword({ username: normalizeEmail(email) });
 }
 
 export async function confirmPasswordReset(email: string, code: string, password: string) {
   await confirmResetPassword({
-    username: email.toLowerCase(),
+    username: normalizeEmail(email),
     confirmationCode: code,
     newPassword: password,
   });
@@ -206,6 +243,14 @@ export async function getUserGroups(): Promise<string[]> {
 
 export async function registerPasskey() {
   await associateWebAuthnCredential();
+  try {
+    const attrs = await fetchUserAttributes();
+    if (attrs.email) {
+      setPasskeyHint(attrs.email);
+    }
+  } catch {
+    void 0;
+  }
 }
 
 export async function getPasskeys() {

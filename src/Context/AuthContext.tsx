@@ -20,7 +20,6 @@ import {
   UserAttributes,
   verifyUserAttribute,
 } from "./cognito";
-import usePersistentState from "../Hooks/usePersistentState.ts";
 
 export interface RegisterProps {
   email: string;
@@ -68,6 +67,7 @@ type Stage = "login" | "register" | "forgotPassword";
 
 type State = {
   isAuthenticated: boolean;
+  initializing: boolean;
   allowRegistration: boolean;
   setStage: (stage: Stage) => void;
   stage: Stage;
@@ -131,12 +131,18 @@ export const AuthProvider = ({
   initUserPool({ cognitoUserPoolId, cognitoClientId });
 
   const [stage, setStage] = useState<Stage>("login");
-  const [userAttributes, setUserAttributes] = usePersistentState<UserAttributes | null>(null, "user-attr-state");
-  const [userGroups, setUserGroups] = usePersistentState<string[]>([], "user-group-state");
+  const [initializing, setInitializing] = useState(true);
+  const [userAttributes, setUserAttributes] = useState<UserAttributes | null>(null);
+  const [userGroups, setUserGroups] = useState<string[]>([]);
 
   useEffect(() => {
-    loadSession(setUserAttributes, setUserGroups);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    try {
+      localStorage.removeItem("use_persistent_storage_user-attr-state");
+      localStorage.removeItem("use_persistent_storage_user-group-state");
+    } catch {
+      void 0;
+    }
+    loadSession(setUserAttributes, setUserGroups).finally(() => setInitializing(false));
   }, []);
 
   const login = async ({ email, password }: LoginProps) => {
@@ -183,6 +189,7 @@ export const AuthProvider = ({
     <AuthContext.Provider
       value={{
         isAuthenticated: userAttributes !== null,
+        initializing,
         allowRegistration,
         stage,
         setStage,

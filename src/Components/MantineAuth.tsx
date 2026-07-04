@@ -1,5 +1,6 @@
 import { AuthProvider, Language } from "../Context/AuthContext";
 import { AuthWrapper } from "./AuthWrapper";
+import { MfaConfig } from "./MfaNudge";
 
 interface MantineAuthProps {
   cognitoUserPoolId: string;
@@ -9,6 +10,7 @@ interface MantineAuthProps {
   language?: Language;
   headerSection?: React.ReactNode;
   footerSection?: React.ReactNode;
+  mfa?: MfaConfig;
 }
 
 export function MantineAuth({
@@ -18,7 +20,8 @@ export function MantineAuth({
   children,
   language = "en",
   headerSection,
-  footerSection
+  footerSection,
+  mfa,
 }: MantineAuthProps) {
   return (
     <AuthProvider
@@ -27,10 +30,9 @@ export function MantineAuth({
       allowRegistration={allowRegistration}
       language={language}
     >
-      <AuthWrapper
-          headerSection={headerSection}
-          footerSection={footerSection}
-      >{children}</AuthWrapper>
+      <AuthWrapper headerSection={headerSection} footerSection={footerSection} mfa={mfa}>
+        {children}
+      </AuthWrapper>
     </AuthProvider>
   );
 }
