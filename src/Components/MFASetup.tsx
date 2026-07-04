@@ -141,7 +141,7 @@ export function MFASetup({
   };
 
   return (
-    <Stack maw={480} gap="md">
+    <Stack gap="md">
       <Card withBorder radius="md" padding="lg">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
           <Group wrap="nowrap" align="flex-start">
