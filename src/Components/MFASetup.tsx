@@ -1,16 +1,7 @@
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Popover,
-  Stack,
-  Text,
-  ThemeIcon,
-} from "@mantine/core";
-import { IconDeviceMobile, IconFingerprint, IconTrash } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { Box, Button, Group, Modal, Paper, Stack, Text } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconFingerprint } from "@tabler/icons-react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   disableMFA,
   getMFAPreference,
@@ -41,36 +32,104 @@ function formatError(err: unknown): string {
   return `${error.name ?? "Error"}: ${message}${error.code ? ` (${error.code})` : ""}`;
 }
 
-function ConfirmButton({
+function StatusDot({ label }: { label: string }) {
+  return (
+    <Group gap={5} wrap="nowrap">
+      <Box w={6} h={6} bdrs="50%" bg="var(--mantine-color-teal-filled)" />
+      <Text fz={12} fw={600} c="teal">
+        {label}
+      </Text>
+    </Group>
+  );
+}
+
+function ConfirmAction({
   label,
+  title,
+  description,
   confirmLabel,
+  cancelLabel,
   onConfirm,
-  icon,
 }: {
   label: string;
+  title: string;
+  description: string;
   confirmLabel: string;
+  cancelLabel: string;
   onConfirm: () => void;
-  icon?: React.ReactNode;
+}) {
+  const [opened, { open, close }] = useDisclosure(false);
+
+  return (
+    <>
+      <Button variant="subtle" color="red" size="compact-sm" onClick={open}>
+        {label}
+      </Button>
+      <Modal opened={opened} onClose={close} title={title} size="sm" centered>
+        <Stack gap="md">
+          <Text size="sm">{description}</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={close}>
+              {cancelLabel}
+            </Button>
+            <Button
+              color="red"
+              onClick={() => {
+                close();
+                onConfirm();
+              }}
+            >
+              {confirmLabel}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
+  );
+}
+
+function SecurityRow({
+  title,
+  description,
+  active,
+  activeLabel,
+  inactiveLabel,
+  action,
+  withDivider,
+}: {
+  title: string;
+  description: string;
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+  action: ReactNode;
+  withDivider?: boolean;
 }) {
   return (
-    <Popover position="bottom-end" withArrow shadow="md">
-      <Popover.Target>
-        {icon ? (
-          <ActionIcon variant="subtle" color="red" aria-label={label}>
-            {icon}
-          </ActionIcon>
-        ) : (
-          <Button size="xs" variant="light" color="red">
-            {label}
-          </Button>
-        )}
-      </Popover.Target>
-      <Popover.Dropdown>
-        <Button size="xs" color="red" onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
-      </Popover.Dropdown>
-    </Popover>
+    <Group
+      align="center"
+      gap={16}
+      wrap="nowrap"
+      py={14}
+      style={
+        withDivider
+          ? { borderBottom: "1px solid var(--mantine-color-default-border)" }
+          : undefined
+      }
+    >
+      <Stack gap={3} flex={1} miw={0}>
+        <Group gap={8} wrap="nowrap">
+          <Text fz={14} fw={500}>
+            {title}
+          </Text>
+          {active && <StatusDot label={activeLabel} />}
+        </Group>
+        <Text fz={13} c="dimmed">
+          {active ? description : `${inactiveLabel} · ${description}`}
+        </Text>
+      </Stack>
+      <Box flex="none">{action}</Box>
+    </Group>
   );
 }
 
@@ -141,112 +200,109 @@ export function MFASetup({
   };
 
   return (
-    <Stack gap="md">
-      <Card withBorder radius="md" padding="lg">
-        <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Group wrap="nowrap" align="flex-start">
-            <ThemeIcon variant="light" size="lg" radius="md">
-              <IconDeviceMobile size={20} />
-            </ThemeIcon>
-            <div>
-              <Text fw={600}>{translation.title.authenticatorApp}</Text>
-              <Text size="sm" c="dimmed">
-                {translation.texts.totpDescription}
-              </Text>
-            </div>
-          </Group>
-          <Badge variant="light" flex="none" color={totpMode === "enabled" ? "teal" : "gray"}>
-            {totpMode === "enabled" ? translation.badges.active : translation.badges.inactive}
-          </Badge>
-        </Group>
-
-        {totpMode === "enabling" && (
-          <Card.Section inheritPadding pt="md" mt="md" withBorder>
-            <TotpSetup
-              mfaAppName={mfaAppName}
-              onVerified={() => {
-                setTotpMode("enabled");
-                onEnable?.();
-              }}
-              onCancel={() => setTotpMode("disabled")}
+    <Stack gap={0}>
+      <SecurityRow
+        title={translation.title.authenticatorApp}
+        description={translation.texts.totpDescription}
+        active={totpMode === "enabled"}
+        activeLabel={translation.badges.active}
+        inactiveLabel={translation.badges.inactive}
+        withDivider
+        action={
+          totpMode === "enabled" ? (
+            <ConfirmAction
+              label={translation.buttons.disable}
+              title={translation.title.authenticatorApp}
+              description={translation.texts.confirmDisableTotp}
+              confirmLabel={translation.buttons.disable}
+              cancelLabel={translation.buttons.cancel}
+              onConfirm={onDisableTotp}
             />
-          </Card.Section>
-        )}
-
-        {totpMode !== "enabling" && (
-          <Group justify="flex-end" mt="md">
-            {totpMode === "disabled" ? (
-              <Button size="xs" variant="light" onClick={() => setTotpMode("enabling")}>
+          ) : (
+            totpMode === "disabled" && (
+              <Button variant="default" size="compact-sm" onClick={() => setTotpMode("enabling")}>
                 {translation.buttons.enable}
               </Button>
-            ) : (
-              <ConfirmButton
-                label={translation.buttons.disable}
-                confirmLabel={translation.buttons.confirmRemove}
-                onConfirm={onDisableTotp}
-              />
-            )}
-          </Group>
-        )}
-      </Card>
+            )
+          )
+        }
+      />
+
+      {totpMode === "enabling" && (
+        <Box py={14}>
+          <TotpSetup
+            mfaAppName={mfaAppName}
+            onVerified={() => {
+              setTotpMode("enabled");
+              onEnable?.();
+            }}
+            onCancel={() => setTotpMode("disabled")}
+          />
+        </Box>
+      )}
 
       {enablePasskeys && (
-        <Card withBorder radius="md" padding="lg">
-          <Group justify="space-between" align="flex-start" wrap="nowrap">
-            <Group wrap="nowrap" align="flex-start">
-              <ThemeIcon variant="light" size="lg" radius="md">
-                <IconFingerprint size={20} />
-              </ThemeIcon>
-              <div>
-                <Text fw={600}>{translation.title.passkeys}</Text>
-                <Text size="sm" c="dimmed">
-                  {translation.texts.passkeysDescription}
-                </Text>
-              </div>
-            </Group>
-            <Badge variant="light" flex="none" color={passkeys.length > 0 ? "teal" : "gray"}>
-              {passkeys.length > 0 ? translation.badges.active : translation.badges.inactive}
-            </Badge>
-          </Group>
+        <>
+          <SecurityRow
+            title={translation.title.passkeys}
+            description={translation.texts.passkeysDescription}
+            active={passkeys.length > 0}
+            activeLabel={translation.badges.active}
+            inactiveLabel={translation.badges.inactive}
+            action={
+              <Button
+                variant="default"
+                size="compact-sm"
+                loading={passkeyLoading}
+                onClick={onAddPasskey}
+              >
+                {translation.buttons.addPasskey}
+              </Button>
+            }
+          />
 
-          <Stack gap="xs" mt="md">
-            {passkeys.map((passkey) => (
-              <Group key={passkey.credentialId} justify="space-between" wrap="nowrap">
-                <div>
-                  <Text size="sm">{passkey.friendlyCredentialName || translation.title.passkeys}</Text>
-                  {passkey.createdAt && (
-                    <Text size="xs" c="dimmed">
-                      {translation.texts.addedOn} {new Date(passkey.createdAt).toLocaleDateString()}
-                    </Text>
-                  )}
-                </div>
-                <ConfirmButton
-                  label={translation.buttons.remove}
-                  confirmLabel={translation.buttons.confirmRemove}
-                  onConfirm={() => onRemovePasskey(passkey.credentialId)}
-                  icon={<IconTrash size={16} />}
-                />
-              </Group>
-            ))}
-            {passkeys.length === 0 && (
-              <Text size="sm" c="dimmed">
-                {translation.texts.noPasskeys}
-              </Text>
-            )}
-          </Stack>
-
-          <Group justify="flex-end" mt="md">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconFingerprint size={14} />}
-              loading={passkeyLoading}
-              onClick={onAddPasskey}
-            >
-              {translation.buttons.addPasskey}
-            </Button>
-          </Group>
-        </Card>
+          {passkeys.length > 0 && (
+            <Stack gap={8} pb={14}>
+              {passkeys.map((passkey) => (
+                <Paper
+                  key={passkey.credentialId}
+                  withBorder
+                  radius={10}
+                  px={13}
+                  py={11}
+                  bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))"
+                >
+                  <Group gap={12} wrap="nowrap">
+                    <IconFingerprint
+                      size={19}
+                      stroke={1.7}
+                      style={{ color: "var(--mantine-color-dimmed)" }}
+                    />
+                    <Stack gap={2} flex={1} miw={0}>
+                      <Text fz={13} fw={500} truncate>
+                        {passkey.friendlyCredentialName || translation.title.passkeys}
+                      </Text>
+                      {passkey.createdAt && (
+                        <Text fz={12} c="dimmed">
+                          {translation.texts.addedOn}{" "}
+                          {new Date(passkey.createdAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </Stack>
+                    <ConfirmAction
+                      label={translation.buttons.remove}
+                      title={translation.title.passkeys}
+                      description={translation.texts.confirmRemovePasskey}
+                      confirmLabel={translation.buttons.confirmRemove}
+                      cancelLabel={translation.buttons.cancel}
+                      onConfirm={() => onRemovePasskey(passkey.credentialId)}
+                    />
+                  </Group>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </>
       )}
     </Stack>
   );

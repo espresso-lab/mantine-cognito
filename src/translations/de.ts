@@ -71,6 +71,10 @@ export default {
     addedOn: "Hinzugefügt am",
     passkeyAdded: "Passkey wurde eingerichtet.",
     totpEnabled: "Authenticator-App wurde eingerichtet.",
+    confirmRemovePasskey:
+      "Dieses Gerät kann sich danach nicht mehr ohne Passwort anmelden.",
+    confirmDisableTotp:
+      "Dein Konto ist danach nur noch mit Passwort geschützt.",
   },
   badges: {
     active: "Aktiv",
