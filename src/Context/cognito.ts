@@ -38,6 +38,8 @@ export interface SignInResult {
   nextStep: SignInNextStep;
 }
 
+export type SignOutScope = "global" | "local";
+
 interface UserPoolAttributes {
   cognitoUserPoolId: string;
   cognitoClientId: string;
@@ -70,9 +72,18 @@ function normalizeEmail(email: string) {
 
 const PASSKEY_HINT_KEY = "mantine-cognito.passkey-email";
 
+/**
+ * The hint belongs to one user pool client: an app that offers two logins on the same origin would
+ * otherwise propose the address of the other pool, whose passkey cannot answer the challenge.
+ */
+function passkeyHintKey() {
+  const clientId = Amplify.getConfig().Auth?.Cognito?.userPoolClientId;
+  return clientId ? `${PASSKEY_HINT_KEY}.${clientId}` : PASSKEY_HINT_KEY;
+}
+
 export function getPasskeyHint(): string | null {
   try {
-    return localStorage.getItem(PASSKEY_HINT_KEY);
+    return localStorage.getItem(passkeyHintKey());
   } catch {
     return null;
   }
@@ -80,7 +91,7 @@ export function getPasskeyHint(): string | null {
 
 function setPasskeyHint(email: string) {
   try {
-    localStorage.setItem(PASSKEY_HINT_KEY, normalizeEmail(email));
+    localStorage.setItem(passkeyHintKey(), normalizeEmail(email));
   } catch {
     void 0;
   }
@@ -88,7 +99,7 @@ function setPasskeyHint(email: string) {
 
 export function clearPasskeyHint() {
   try {
-    localStorage.removeItem(PASSKEY_HINT_KEY);
+    localStorage.removeItem(passkeyHintKey());
   } catch {
     void 0;
   }
@@ -152,7 +163,17 @@ export async function confirmSignInWithNewPassword(password: string): Promise<Si
   };
 }
 
-export async function signOut() {
+/**
+ * A global sign-out revokes every token the user holds in the pool, on every device and every app
+ * client. An app that shares its pool with another one signs the user out there too, so it can ask
+ * for "local" and end only the session in this browser.
+ */
+export async function signOut(scope: SignOutScope = "global") {
+  if (scope === "local") {
+    await amplifySignOut();
+    return;
+  }
+
   try {
     await amplifySignOut({ global: true });
   } catch {

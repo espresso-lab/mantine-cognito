@@ -9,10 +9,13 @@ export type {
   ForcedPasswordResetProps,
   ForgotPasswordProps,
   LoginProps,
+  LogoutProps,
   RegisterProps,
   UpdateAttributesProps,
   VerifyAttributeProps,
 } from "./Context/AuthContext";
+
+export type { SignOutScope } from "./Context/cognito";
 
 export {
   getIdToken,

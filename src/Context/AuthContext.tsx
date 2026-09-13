@@ -1,4 +1,4 @@
-import { SignInResult } from "./cognito";
+import { SignInResult, SignOutScope } from "./cognito";
 import { createContext, ReactNode, useEffect, useState } from "react";
 import {
   confirmPasswordReset,
@@ -54,6 +54,10 @@ export interface ForcedPasswordResetProps {
   password: string;
 }
 
+export interface LogoutProps {
+  scope?: SignOutScope;
+}
+
 export interface VerifyAttributeProps {
   userAttribute: "email" | "phone_number";
   totp: string;
@@ -85,7 +89,7 @@ type State = {
   sendEmailConfirmationCode: () => Promise<void>;
   login: (props: LoginProps) => Promise<SignInResult>;
   loginWithPasskey: (email: string) => Promise<SignInResult>;
-  logout: () => void;
+  logout: (props?: LogoutProps) => Promise<void>;
   language: Language;
 };
 
@@ -163,8 +167,8 @@ export const AuthProvider = ({
     return result;
   };
 
-  const logout = async () => {
-    await signOut();
+  const logout = async ({ scope }: LogoutProps = {}) => {
+    await signOut(scope);
     setUserAttributes(null);
     setUserGroups([]);
   };
