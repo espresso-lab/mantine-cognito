@@ -16,6 +16,7 @@ export function EmailVerification({ color, onVerified }: EmailVerificationProps)
   const { userAttributes, verifyAttribute, sendEmailConfirmationCode } = useAuth();
   const translation = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const form = useForm({
     initialValues: { totp: "" },
@@ -26,10 +27,13 @@ export function EmailVerification({ color, onVerified }: EmailVerificationProps)
     return null;
   }
 
-  async function onVerify() {
+  async function onVerify(code: string) {
+    if (loading) {
+      return;
+    }
     setLoading(true);
     try {
-      await verifyAttribute({ userAttribute: "email", totp: form.values.totp });
+      await verifyAttribute({ userAttribute: "email", totp: code });
       form.reset();
       onVerified?.();
     } catch (reason) {
@@ -40,31 +44,39 @@ export function EmailVerification({ color, onVerified }: EmailVerificationProps)
           ? translation.errors.limitExceeded
           : translation.validation.code,
       );
+      setAttempt((count) => count + 1);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Alert color={color} icon={<IconMailExclamation />} title={translation.title.verifyEmail}>
-      <form onSubmit={form.onSubmit(onVerify)}>
-        <Stack gap="sm">
-          <Text size="sm">{translation.texts.verifyEmail}</Text>
-          <Text size="sm">
-            {translation.texts.codeSentTo}{" "}
-            <Text span fw={600} size="sm">
-              {String(userAttributes.email)}
+    <form onSubmit={form.onSubmit(({ totp }) => onVerify(totp))}>
+      <Stack gap="sm">
+        <Alert color={color} icon={<IconMailExclamation />} title={translation.title.verifyEmail}>
+          <Stack gap="xs">
+            <Text size="sm">{translation.texts.verifyEmail}</Text>
+            <Text size="sm">
+              {translation.texts.codeSentTo}{" "}
+              <Text span fw={600} size="sm">
+                {String(userAttributes.email)}
+              </Text>
             </Text>
-          </Text>
-          <CodeInput onComplete={onVerify} disabled={loading} {...form.getInputProps("totp")} />
-          <Group justify="space-between" wrap="wrap">
-            <ResendCode onResend={sendEmailConfirmationCode} />
-            <Button type="submit" loading={loading}>
-              {translation.buttons.code}
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Alert>
+          </Stack>
+        </Alert>
+        <CodeInput
+          key={attempt}
+          autoFocus={attempt > 0}
+          onComplete={onVerify}
+          {...form.getInputProps("totp")}
+        />
+        <Group justify="space-between" wrap="wrap">
+          <ResendCode onResend={sendEmailConfirmationCode} />
+          <Button type="submit" loading={loading}>
+            {translation.buttons.code}
+          </Button>
+        </Group>
+      </Stack>
+    </form>
   );
 }

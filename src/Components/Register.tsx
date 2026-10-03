@@ -54,10 +54,10 @@ export function Register() {
     }
   }
 
-  async function onVerify() {
+  async function onVerify(code = verificationForm.values.totp) {
     setLoading(true);
     try {
-      await confirmRegistration({ email: form.values.email, totp: verificationForm.values.totp });
+      await confirmRegistration({ email: form.values.email, totp: code });
       const result = await login(form.values);
       if (!result.isSignedIn) {
         setStage("login");
@@ -76,7 +76,7 @@ export function Register() {
 
   if (step === "verification") {
     return (
-      <form onSubmit={verificationForm.onSubmit(onVerify)}>
+      <form onSubmit={verificationForm.onSubmit(({ totp }) => onVerify(totp))}>
         <Stack gap="md">
           <Text size="sm" c="dimmed" ta="center">
             {translation.texts.codeSentTo}{" "}

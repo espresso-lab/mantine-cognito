@@ -132,13 +132,13 @@ export function Login() {
     }
   }
 
-  async function onLogin() {
+  async function onLogin(mfaCode = mfaForm.values.totp) {
     setLoading("login");
     setError(undefined);
     try {
       continueWith(
         step === "mfa"
-          ? await confirmMFA({ code: mfaForm.values.totp })
+          ? await confirmMFA({ code: mfaCode })
           : await login(loginForm.values),
       );
     } catch (reason) {
@@ -148,14 +148,11 @@ export function Login() {
     }
   }
 
-  async function onVerification() {
+  async function onVerification(code = verificationForm.values.totp) {
     setLoading("login");
     setError(undefined);
     try {
-      await confirmRegistration({
-        ...loginForm.values,
-        ...verificationForm.values,
-      });
+      await confirmRegistration({ ...loginForm.values, totp: code });
       await onLogin();
     } catch (reason) {
       handleAuthError(reason);
@@ -217,7 +214,7 @@ export function Login() {
 
   if (step === "mfa") {
     return (
-      <form onSubmit={mfaForm.onSubmit(onLogin)}>
+      <form onSubmit={mfaForm.onSubmit(({ totp }) => onLogin(totp))}>
         <Stack gap="md">
           {errorAlert}
           <Text size="sm" c="dimmed" ta="center">
@@ -248,7 +245,7 @@ export function Login() {
 
   if (step === "verification") {
     return (
-      <form onSubmit={verificationForm.onSubmit(onVerification)}>
+      <form onSubmit={verificationForm.onSubmit(({ totp }) => onVerification(totp))}>
         <Stack gap="md">
           {errorAlert}
           <Text size="sm" c="dimmed" ta="center">
