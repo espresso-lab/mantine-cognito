@@ -41,7 +41,9 @@ export function ForgotPassword() {
           "email",
           reason.name === "LimitExceededException"
             ? translation.errors.limitExceeded
-            : reason.message,
+            : reason.name === "InvalidParameterException"
+              ? translation.errors.noVerifiedEmail
+              : reason.message,
         );
       }
     } finally {

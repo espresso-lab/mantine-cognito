@@ -1,5 +1,7 @@
 export { MantineAuth } from "./Components/MantineAuth";
 export { MFASetup } from "./Components/MFASetup";
+export { EmailVerification } from "./Components/EmailVerification";
+export type { EmailVerificationProps } from "./Components/EmailVerification";
 export type { MfaConfig } from "./Components/MfaNudge";
 export { useAuth } from "./Hooks/useAuth";
 export type {
@@ -15,7 +17,7 @@ export type {
   VerifyAttributeProps,
 } from "./Context/AuthContext";
 
-export type { SignOutScope } from "./Context/cognito";
+export type { SignInNextStep, SignOutScope, VerifiableAttribute } from "./Context/cognito";
 
 export {
   getIdToken,

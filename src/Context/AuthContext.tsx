@@ -1,5 +1,6 @@
-import { SignInResult, SignOutScope } from "./cognito";
+import { SignInResult, SignOutScope, VerifiableAttribute } from "./cognito";
 import { createContext, ReactNode, useEffect, useState } from "react";
+import { Hub } from "aws-amplify/utils";
 import {
   confirmPasswordReset,
   confirmRegistration as cognitoConfirmRegistration,
@@ -10,6 +11,7 @@ import {
   initUserPool,
   isSessionValid,
   passwordReset,
+  refreshSession,
   resendAccountConfirmationCode,
   resendEmailConfirmationCode,
   signIn,
@@ -59,7 +61,7 @@ export interface LogoutProps {
 }
 
 export interface VerifyAttributeProps {
-  userAttribute: "email" | "phone_number";
+  userAttribute: VerifiableAttribute;
   totp: string;
 }
 
@@ -84,7 +86,7 @@ type State = {
   forcedPasswordReset: (props: ForcedPasswordResetProps) => Promise<SignInResult>;
   confirmMFA: (props: ConfirmMFAProps) => Promise<SignInResult>;
   verifyAttribute: (props: VerifyAttributeProps) => Promise<void>;
-  updateAttributes: (props: UpdateAttributesProps) => Promise<void>;
+  updateAttributes: (props: UpdateAttributesProps) => Promise<VerifiableAttribute[]>;
   sendAccountConfirmationCode: (email: string) => Promise<void>;
   sendEmailConfirmationCode: () => Promise<void>;
   login: (props: LoginProps) => Promise<SignInResult>;
@@ -105,23 +107,39 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Errors after which the session is gone for good. Anything else (network, throttling) leaves the
+ * tokens in place, so the user stays signed in instead of being thrown out by a flaky connection.
+ */
+const SIGNED_OUT_ERRORS = new Set([
+  "NotAuthorizedException",
+  "PasswordResetRequiredException",
+  "TokenRevokedException",
+  "UserNotConfirmedException",
+  "UserNotFoundException",
+  "UserUnAuthenticatedException",
+]);
+
 async function loadSession(
   setUserAttributes: (v: UserAttributes | null) => void,
   setUserGroups: (v: string[]) => void,
 ) {
-  try {
-    const valid = await isSessionValid();
-    if (valid) {
-      const [attrs, groups] = await Promise.all([getUserAttributes(), getUserGroups()]);
-      setUserAttributes(attrs);
-      setUserGroups(groups);
-    } else {
-      setUserAttributes(null);
-      setUserGroups([]);
-    }
-  } catch {
+  const signOut = () => {
     setUserAttributes(null);
     setUserGroups([]);
+  };
+  try {
+    if (!(await isSessionValid())) {
+      signOut();
+      return;
+    }
+    const [attrs, groups] = await Promise.all([getUserAttributes(), getUserGroups()]);
+    setUserAttributes(attrs);
+    setUserGroups(groups);
+  } catch (error) {
+    if (error instanceof Error && SIGNED_OUT_ERRORS.has(error.name)) {
+      signOut();
+    }
   }
 }
 
@@ -148,6 +166,19 @@ export const AuthProvider = ({
     }
     loadSession(setUserAttributes, setUserGroups).finally(() => setInitializing(false));
   }, []);
+
+  useEffect(
+    () =>
+      Hub.listen("auth", ({ payload }) => {
+        switch (payload.event) {
+          case "signedIn":
+          case "signedOut":
+          case "tokenRefresh_failure":
+            void loadSession(setUserAttributes, setUserGroups);
+        }
+      }),
+    [],
+  );
 
   const login = async ({ email, password }: LoginProps) => {
     const result = await signIn(email, password);
@@ -181,12 +212,15 @@ export const AuthProvider = ({
 
   const verifyAttribute = async ({ userAttribute, totp }: VerifyAttributeProps) => {
     await verifyUserAttribute(userAttribute, totp);
+    await refreshSession();
     await loadSession(setUserAttributes, setUserGroups);
   };
 
   const updateAttributes = async ({ userAttributes: attrs }: UpdateAttributesProps) => {
-    await updateUserAttributes(attrs);
+    const pending = await updateUserAttributes(attrs);
+    await refreshSession();
     await loadSession(setUserAttributes, setUserGroups);
+    return pending;
   };
 
   return (

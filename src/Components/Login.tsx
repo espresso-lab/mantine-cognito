@@ -14,7 +14,7 @@ import { isEmail, isNotEmpty, useForm } from "@mantine/form";
 import { IconArrowLeft, IconFingerprint, IconInfoCircle } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
-import { getPasskeyHint } from "../Context/cognito";
+import { getPasskeyHint, type SignInResult } from "../Context/cognito";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { CodeInput } from "./CodeInput";
 import { ResendCode } from "./ResendCode";
@@ -110,26 +110,37 @@ export function Login() {
     }
   }
 
+  function continueWith({ nextStep }: SignInResult) {
+    switch (nextStep) {
+      case "DONE":
+        return;
+      case "CONFIRM_SIGN_IN_WITH_TOTP_CODE":
+        setStep("mfa");
+        return;
+      case "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED":
+        setStep("newPassword");
+        return;
+      case "CONFIRM_SIGN_UP":
+        setStep("verification");
+        return;
+      case "RESET_PASSWORD":
+        setStage("forgotPassword");
+        return;
+      default:
+        setStep("credentials");
+        setError(translation.errors.unsupportedStep);
+    }
+  }
+
   async function onLogin() {
     setLoading("login");
     setError(undefined);
     try {
-      const result =
+      continueWith(
         step === "mfa"
           ? await confirmMFA({ code: mfaForm.values.totp })
-          : await login(loginForm.values);
-
-      switch (result.nextStep) {
-        case "CONFIRM_SIGN_IN_WITH_TOTP_CODE":
-          setStep("mfa");
-          break;
-        case "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED":
-          setStep("newPassword");
-          break;
-        case "CONFIRM_SIGN_UP":
-          setStep("verification");
-          break;
-      }
+          : await login(loginForm.values),
+      );
     } catch (reason) {
       handleAuthError(reason);
     } finally {
@@ -157,8 +168,7 @@ export function Login() {
     setLoading("login");
     setError(undefined);
     try {
-      await forcedPasswordReset(newPasswordForm.values);
-      setStage("login");
+      continueWith(await forcedPasswordReset(newPasswordForm.values));
     } catch (reason) {
       if (reason instanceof Error) {
         newPasswordForm.setFieldError("password", reason.message);
@@ -178,10 +188,7 @@ export function Login() {
     setLoading("passkey");
     setError(undefined);
     try {
-      const result = await loginWithPasskey(passkeyEmail);
-      if (result.nextStep === "CONFIRM_SIGN_IN_WITH_TOTP_CODE") {
-        setStep("mfa");
-      }
+      continueWith(await loginWithPasskey(passkeyEmail));
     } catch (reason) {
       if (!silent) {
         handleAuthError(reason);

@@ -1,5 +1,6 @@
 export default {
   title: {
+    verifyEmail: "Verify email address",
     login: "Sign in",
     register: "Register",
     code: "Verify",
@@ -53,6 +54,9 @@ export default {
     sendCode: "Send code",
   },
   texts: {
+    verifyEmail:
+      "Your new email address is not verified yet. Enter the 6-digit code we sent to it. Until then, \"Forgot password?\" will not work.",
+    emailVerified: "Email address verified.",
     codeSentTo: "We sent a confirmation code to",
     checkInbox:
       "Check your email inbox and enter the 6-digit code. If you haven't received a code yet, you can request one below.",
@@ -92,6 +96,8 @@ export default {
     special: "At least one special character",
   },
   errors: {
+    unsupportedStep: "This sign-in step is not supported here. Please contact support.",
+    noVerifiedEmail: "There is no verified email address for this account. Please contact support.",
     noCode: "The setup key could not be loaded.",
     generic: "Something went wrong. Please try again.",
     limitExceeded: "Too many attempts. Please wait a moment and try again.",

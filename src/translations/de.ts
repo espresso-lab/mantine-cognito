@@ -1,5 +1,6 @@
 export default {
   title: {
+    verifyEmail: "E-Mail-Adresse bestätigen",
     login: "Anmelden",
     register: "Registrieren",
     code: "Verifizieren",
@@ -54,6 +55,9 @@ export default {
     sendCode: "Code senden",
   },
   texts: {
+    verifyEmail:
+      "Deine neue E-Mail-Adresse ist noch nicht bestätigt. Gib den 6-stelligen Code ein, den wir an sie gesendet haben. Bis dahin funktioniert „Passwort vergessen?“ nicht.",
+    emailVerified: "E-Mail-Adresse wurde bestätigt.",
     codeSentTo: "Wir haben einen Bestätigungscode gesendet an",
     checkInbox:
       "Prüfe dein E-Mail-Postfach und gib den 6-stelligen Code ein. Falls du noch keinen Code erhalten hast, kannst du unten einen anfordern.",
@@ -94,6 +98,8 @@ export default {
     special: "Mindestens ein Sonderzeichen",
   },
   errors: {
+    unsupportedStep: "Dieser Anmeldeschritt wird hier nicht unterstützt. Bitte wende dich an den Support.",
+    noVerifiedEmail: "Für dieses Konto ist keine bestätigte E-Mail-Adresse hinterlegt. Bitte wende dich an den Support.",
     noCode: "Der Einrichtungsschlüssel konnte nicht geladen werden.",
     generic: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     limitExceeded: "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",

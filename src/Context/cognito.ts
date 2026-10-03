@@ -21,17 +21,14 @@ import {
   deleteWebAuthnCredential,
   signUp as amplifySignUp,
   type FetchUserAttributesOutput,
+  type SignInOutput,
 } from "aws-amplify/auth";
 
 export type UserAttributes = Record<string, string | boolean>;
 
-export type SignInNextStep =
-  | "DONE"
-  | "CONFIRM_SIGN_IN_WITH_TOTP_CODE"
-  | "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED"
-  | "CONFIRM_SIGN_IN_WITH_PASSWORD"
-  | "CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION"
-  | "CONFIRM_SIGN_UP";
+export type SignInNextStep = SignInOutput["nextStep"]["signInStep"];
+
+export type VerifiableAttribute = "email" | "phone_number";
 
 export interface SignInResult {
   isSignedIn: boolean;
@@ -45,7 +42,17 @@ interface UserPoolAttributes {
   cognitoClientId: string;
 }
 
+let configuredClientId: string | undefined;
+
+/**
+ * Every Amplify.configure resets the token store and freezes a new config, so the pool is
+ * configured once per client and not on every render of the provider.
+ */
 export function initUserPool(poolProps: UserPoolAttributes) {
+  if (configuredClientId === poolProps.cognitoClientId) {
+    return;
+  }
+  configuredClientId = poolProps.cognitoClientId;
   Amplify.configure({
     Auth: {
       Cognito: {
@@ -121,7 +128,7 @@ export async function signIn(email: string, password: string): Promise<SignInRes
   });
   return {
     isSignedIn,
-    nextStep: nextStep.signInStep as SignInNextStep,
+    nextStep: nextStep.signInStep,
   };
 }
 
@@ -139,7 +146,7 @@ export async function signInWithPasskey(email: string): Promise<SignInResult> {
   }
   return {
     isSignedIn,
-    nextStep: nextStep.signInStep as SignInNextStep,
+    nextStep: nextStep.signInStep,
   };
 }
 
@@ -149,7 +156,7 @@ export async function confirmSignInWithCode(code: string): Promise<SignInResult>
   });
   return {
     isSignedIn,
-    nextStep: nextStep.signInStep as SignInNextStep,
+    nextStep: nextStep.signInStep,
   };
 }
 
@@ -159,7 +166,7 @@ export async function confirmSignInWithNewPassword(password: string): Promise<Si
   });
   return {
     isSignedIn,
-    nextStep: nextStep.signInStep as SignInNextStep,
+    nextStep: nextStep.signInStep,
   };
 }
 
@@ -179,6 +186,14 @@ export async function signOut(scope: SignOutScope = "global") {
   } catch {
     await amplifySignOut();
   }
+}
+
+/**
+ * The ID token carries the attributes the backends read (email, name). After a change it has to be
+ * fetched anew, or the old values travel along until the token expires on its own.
+ */
+export async function refreshSession() {
+  await fetchAuthSession({ forceRefresh: true });
 }
 
 export async function isSessionValid() {
@@ -213,11 +228,15 @@ export async function resendEmailConfirmationCode() {
   await sendUserAttributeVerificationCode({ userAttributeKey: "email" });
 }
 
-export async function updateUserAttributes(attributes: UserAttributes) {
+/** Returns the attributes Cognito holds back until the user confirms them with a code. */
+export async function updateUserAttributes(attributes: UserAttributes): Promise<VerifiableAttribute[]> {
   const userAttributes = Object.fromEntries(
     Object.entries(attributes).map(([key, value]) => [key, String(value)]),
   );
-  await amplifyUpdateUserAttributes({ userAttributes });
+  const result = await amplifyUpdateUserAttributes({ userAttributes });
+  return Object.entries(result)
+    .filter(([, output]) => output.nextStep.updateAttributeStep === "CONFIRM_ATTRIBUTE_WITH_CODE")
+    .map(([key]) => key as VerifiableAttribute);
 }
 
 export async function passwordReset(email: string) {
@@ -232,7 +251,7 @@ export async function confirmPasswordReset(email: string, code: string, password
   });
 }
 
-export async function verifyUserAttribute(attribute: "email" | "phone_number", code: string) {
+export async function verifyUserAttribute(attribute: VerifiableAttribute, code: string) {
   await confirmUserAttribute({ userAttributeKey: attribute, confirmationCode: code });
 }
 
