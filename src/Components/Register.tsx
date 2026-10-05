@@ -1,11 +1,11 @@
-import { Anchor, Button, Center, Group, Stack, Text, TextInput } from "@mantine/core";
+import { Button, Center, Group, Stack, Text, TextInput } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { CodeInput } from "./CodeInput";
 import { ResendCode } from "./ResendCode";
+import { BackToLogin } from "./BackToLogin";
 import { useTranslation } from "../Hooks/useTranslation.ts";
 
 type RegisterStep = "form" | "verification";
@@ -124,23 +124,12 @@ export function Register() {
           {...form.getInputProps("password")}
         />
         <Group justify="space-between" mt="xs">
-          <Anchor
-            component="button"
-            type="button"
+          <BackToLogin
             onClick={() => {
               form.reset();
               setStage("login");
             }}
-            c="dimmed"
-            size="sm"
-          >
-            <Center inline>
-              <IconArrowLeft size={16} />
-              <Text ml={5} size="sm">
-                {translation.links.backToLogin}
-              </Text>
-            </Center>
-          </Anchor>
+          />
           <Button type="submit" loading={loading}>
             {translation.buttons.register}
           </Button>

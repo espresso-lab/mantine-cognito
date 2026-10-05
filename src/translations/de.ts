@@ -1,4 +1,5 @@
 export default {
+  locale: "de-DE",
   title: {
     verifyEmail: "E-Mail-Adresse bestätigen",
     login: "Anmelden",
@@ -10,6 +11,9 @@ export default {
     passkeys: "Passkeys",
     authenticatorApp: "Authenticator-App",
     secureAccount: "Konto absichern",
+    loginFailed: "Anmeldung fehlgeschlagen",
+    disableTotp: "Authenticator-App deaktivieren?",
+    deletePasskey: "Passkey löschen?",
   },
   description: {
     login: "Melde dich an, um fortzufahren.",
@@ -41,8 +45,10 @@ export default {
     enable: "Einrichten",
     disable: "Deaktivieren",
     addPasskey: "Passkey hinzufügen",
-    remove: "Entfernen",
-    confirmRemove: "Wirklich entfernen",
+    delete: "Löschen",
+    close: "Schließen",
+    copy: "Kopieren",
+    copied: "Kopiert",
     setupPasskey: "Passkey einrichten",
     setupAuthenticator: "Authenticator-App einrichten",
     skipForNow: "Später erinnern",
@@ -75,8 +81,8 @@ export default {
     addedOn: "Hinzugefügt am",
     passkeyAdded: "Passkey wurde eingerichtet.",
     totpEnabled: "Authenticator-App wurde eingerichtet.",
-    confirmRemovePasskey:
-      "Dieses Gerät kann sich danach nicht mehr ohne Passwort anmelden.",
+    confirmDeletePasskey: (name: string) =>
+      `„${name}“ wird gelöscht. Dieses Gerät kann sich danach nicht mehr ohne Passwort anmelden.`,
     confirmDisableTotp:
       "Dein Konto ist danach nur noch mit Passwort geschützt.",
   },

@@ -41,18 +41,18 @@
     "qr-code-styling": "^1.9.2"
   },
   "peerDependencies": {
-    "@mantine/core": "^9.6.3",
-    "@mantine/form": "^9.6.3",
-    "@mantine/hooks": "^9.6.3",
+    "@mantine/core": "^9.7.0",
+    "@mantine/form": "^9.7.0",
+    "@mantine/hooks": "^9.7.0",
     "@tabler/icons-react": "^3.26.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@mantine/core": "^9.6.3",
-    "@mantine/form": "^9.6.3",
-    "@mantine/hooks": "^9.6.3",
+    "@mantine/core": "^9.7.0",
+    "@mantine/form": "^9.7.0",
+    "@mantine/hooks": "^9.7.0",
     "@tabler/icons-react": "^3.48.0",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",

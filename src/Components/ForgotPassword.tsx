@@ -1,10 +1,10 @@
-import { Anchor, Button, Center, Group, Stack, Text, TextInput } from "@mantine/core";
+import { Button, Center, Group, Stack, Text, TextInput } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { useState } from "react";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { CodeInput } from "./CodeInput";
 import { ResendCode } from "./ResendCode";
+import { BackToLogin } from "./BackToLogin";
 import { useAuth } from "../Hooks/useAuth";
 import { useTranslation } from "../Hooks/useTranslation.ts";
 
@@ -82,24 +82,13 @@ export function ForgotPassword() {
   }
 
   const backToLogin = (
-    <Anchor
-      component="button"
-      type="button"
+    <BackToLogin
       onClick={() => {
         resetForm.reset();
         emailForm.reset();
         setStage("login");
       }}
-      c="dimmed"
-      size="sm"
-    >
-      <Center inline>
-        <IconArrowLeft size={16} />
-        <Text ml={5} size="sm">
-          {translation.links.backToLogin}
-        </Text>
-      </Center>
-    </Anchor>
+    />
   );
 
   if (step === "reset") {

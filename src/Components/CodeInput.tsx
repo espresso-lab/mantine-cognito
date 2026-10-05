@@ -26,7 +26,7 @@ export function CodeInput({ label, error, ...pinProps }: CodeInputProps) {
         />
       </Center>
       {error && (
-        <Text c="red" size="xs" mt={6} ta="center">
+        <Text c="red" size="xs" mt={4} ta="center">
           {error}
         </Text>
       )}

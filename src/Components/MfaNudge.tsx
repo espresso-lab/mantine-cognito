@@ -1,10 +1,12 @@
 import {
   Button,
   Group,
+  Loader,
   Modal,
   Stack,
   Text,
   ThemeIcon,
+  Title,
   UnstyledButton,
 } from "@mantine/core";
 import {
@@ -45,25 +47,24 @@ function OptionButton({
       onClick={onClick}
       disabled={loading}
       p="md"
-      style={{
-        border: "1px solid var(--mantine-color-default-border)",
-        borderRadius: "var(--mantine-radius-md)",
-        opacity: loading ? 0.6 : 1,
-      }}
+      bd="1px solid var(--mantine-color-default-border)"
+      bdrs="md"
     >
       <Group wrap="nowrap">
-        <ThemeIcon variant="light" size="xl" radius="md">
-          {icon}
-        </ThemeIcon>
+        {icon}
         <Stack gap={2} flex={1}>
           <Text fw={600} size="sm">
             {title}
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="sm" c="dimmed">
             {description}
           </Text>
         </Stack>
-        <IconChevronRight size={18} color="var(--mantine-color-dimmed)" />
+        {loading ? (
+          <Loader size={18} />
+        ) : (
+          <IconChevronRight size={18} color="var(--mantine-color-dimmed)" />
+        )}
       </Group>
     </UnstyledButton>
   );
@@ -141,22 +142,15 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={close}
-      centered
-      size="md"
-      withCloseButton={false}
-      overlayProps={{ blur: 3 }}
-    >
+    <Modal opened={opened} onClose={close} centered radius="md" withCloseButton={false}>
       <Stack gap="md" p="xs">
         <Stack gap={4} align="center">
-          <ThemeIcon variant="light" color="teal" size={48} radius="xl">
+          <ThemeIcon variant="light" color="gray" size={56} radius="xl">
             <IconShieldCheck size={28} />
           </ThemeIcon>
-          <Text fw={700} size="lg" ta="center">
+          <Title order={4} ta="center">
             {translation.title.secureAccount}
-          </Text>
+          </Title>
           <Text size="sm" c="dimmed" ta="center">
             {translation.description.secureAccount}
           </Text>
@@ -167,7 +161,7 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
             <Stack gap="sm">
               {config.enablePasskeys !== false && (
                 <OptionButton
-                  icon={<IconFingerprint size={24} />}
+                  icon={<IconFingerprint size={24} color="var(--mantine-color-dimmed)" />}
                   title={translation.buttons.setupPasskey}
                   description={translation.texts.secureAccountPasskey}
                   onClick={onSetupPasskey}
@@ -175,15 +169,17 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
                 />
               )}
               <OptionButton
-                icon={<IconDeviceMobile size={24} />}
+                icon={<IconDeviceMobile size={24} color="var(--mantine-color-dimmed)" />}
                 title={translation.buttons.setupAuthenticator}
                 description={translation.texts.secureAccountTotp}
                 onClick={() => setView("totp")}
               />
             </Stack>
-            <Button variant="subtle" color="gray" onClick={dismiss}>
-              {translation.buttons.skipForNow}
-            </Button>
+            <Group justify="flex-end" gap="xs">
+              <Button variant="default" onClick={dismiss}>
+                {translation.buttons.skipForNow}
+              </Button>
+            </Group>
           </>
         )}
 

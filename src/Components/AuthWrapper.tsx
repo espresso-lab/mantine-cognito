@@ -35,17 +35,17 @@ export function AuthWrapper({ children, headerSection, footerSection, mfa }: Aut
   }
 
   return (
-    <Container size={420} my={40}>
+    <Container size={420} my="xl">
       {headerSection}
 
-      <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+      <Paper withBorder p="xl" mt="xl" radius="md">
         <Title ta="center" order={2}>
           {stage === "login" && translation.title.login}
           {stage === "register" && translation.title.register}
           {stage === "forgotPassword" && translation.title.forgotPassword}
         </Title>
 
-        <Text c="dimmed" size="sm" ta="center" mt={5}>
+        <Text c="dimmed" size="sm" ta="center" mt={4}>
           {stage === "login" && translation.description.login}
           {stage === "register" && translation.description.register}
           {stage === "forgotPassword" && translation.description.forgotPassword}

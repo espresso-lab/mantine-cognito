@@ -1,4 +1,5 @@
 export default {
+  locale: "en-US",
   title: {
     verifyEmail: "Verify email address",
     login: "Sign in",
@@ -10,6 +11,9 @@ export default {
     passkeys: "Passkeys",
     authenticatorApp: "Authenticator app",
     secureAccount: "Secure your account",
+    loginFailed: "Sign-in failed",
+    disableTotp: "Disable authenticator app?",
+    deletePasskey: "Delete passkey?",
   },
   description: {
     login: "Sign in to continue.",
@@ -40,8 +44,10 @@ export default {
     enable: "Set up",
     disable: "Disable",
     addPasskey: "Add passkey",
-    remove: "Remove",
-    confirmRemove: "Confirm removal",
+    delete: "Delete",
+    close: "Close",
+    copy: "Copy",
+    copied: "Copied",
     setupPasskey: "Set up passkey",
     setupAuthenticator: "Set up authenticator app",
     skipForNow: "Remind me later",
@@ -73,8 +79,8 @@ export default {
     addedOn: "Added on",
     passkeyAdded: "Passkey has been set up.",
     totpEnabled: "Authenticator app has been set up.",
-    confirmRemovePasskey:
-      "This device will no longer be able to sign in without a password.",
+    confirmDeletePasskey: (name: string) =>
+      `"${name}" will be deleted. This device will no longer be able to sign in without a password.`,
     confirmDisableTotp:
       "Your account will only be protected by a password afterwards.",
   },

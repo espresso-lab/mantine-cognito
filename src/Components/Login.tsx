@@ -11,30 +11,17 @@ import {
   TextInput,
 } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
-import { IconArrowLeft, IconFingerprint, IconInfoCircle } from "@tabler/icons-react";
+import { IconExclamationCircle, IconFingerprint } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
 import { getPasskeyHint, type SignInResult } from "../Context/cognito";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { CodeInput } from "./CodeInput";
 import { ResendCode } from "./ResendCode";
+import { BackToLogin } from "./BackToLogin";
 import { useTranslation } from "../Hooks/useTranslation.ts";
 
 type LoginStep = "credentials" | "mfa" | "verification" | "newPassword";
-
-function BackToLogin({ onClick }: { onClick: () => void }) {
-  const translation = useTranslation();
-  return (
-    <Anchor component="button" type="button" onClick={onClick} c="dimmed" size="sm">
-      <Center inline>
-        <IconArrowLeft size={16} />
-        <Text ml={5} size="sm">
-          {translation.links.backToLogin}
-        </Text>
-      </Center>
-    </Anchor>
-  );
-}
 
 export function Login() {
   const translation = useTranslation();
@@ -207,7 +194,11 @@ export function Login() {
   }, []);
 
   const errorAlert = error && (
-    <Alert color="red" variant="light" icon={<IconInfoCircle size={18} />}>
+    <Alert
+      color="red"
+      title={translation.title.loginFailed}
+      icon={<IconExclamationCircle size={18} />}
+    >
       {error}
     </Alert>
   );
@@ -330,8 +321,8 @@ export function Login() {
         <Divider />
         <Button
           fullWidth
-          variant="light"
-          leftSection={<IconFingerprint size={20} />}
+          variant="default"
+          leftSection={<IconFingerprint size={16} />}
           onClick={() => onPasskeyLogin()}
           loading={loading === "passkey"}
           disabled={loading === "login"}

@@ -6,12 +6,12 @@ import {
   Code,
   CopyButton,
   Group,
-  Loader,
+  Skeleton,
   Stack,
   Text,
   Tooltip,
 } from "@mantine/core";
-import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { IconCheck, IconCopy, IconExclamationCircle } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import {
   associateSoftwareToken,
@@ -21,6 +21,7 @@ import {
 } from "../Context/cognito";
 import { CodeInput } from "./CodeInput";
 import { QRCode } from "./QRCode";
+import { useRoleColor } from "../Hooks/useRoleColor";
 import { useTranslation } from "../Hooks/useTranslation.ts";
 
 export interface TotpSetupProps {
@@ -31,6 +32,7 @@ export interface TotpSetupProps {
 
 export function TotpSetup({ mfaAppName, onVerified, onCancel }: TotpSetupProps) {
   const translation = useTranslation();
+  const success = useRoleColor("success");
   const [secret, setSecret] = useState<string>();
   const [email, setEmail] = useState<string>();
   const [failed, setFailed] = useState(false);
@@ -74,13 +76,19 @@ export function TotpSetup({ mfaAppName, onVerified, onCancel }: TotpSetupProps) 
   };
 
   if (failed) {
-    return <Alert color="red">{translation.errors.noCode}</Alert>;
+    return (
+      <Alert
+        color="red"
+        title={translation.errors.noCode}
+        icon={<IconExclamationCircle size={18} />}
+      />
+    );
   }
 
   if (!secret) {
     return (
-      <Center py="xl">
-        <Loader size="sm" />
+      <Center>
+        <Skeleton height={200} width={200} />
       </Center>
     );
   }
@@ -97,13 +105,21 @@ export function TotpSetup({ mfaAppName, onVerified, onCancel }: TotpSetupProps) 
       <Group justify="center" gap="xs" wrap="nowrap">
         <Code style={{ wordBreak: "break-all" }}>{secret}</Code>
         <CopyButton value={secret}>
-          {({ copied, copy }) => (
-            <Tooltip label={copied ? "✓" : undefined} disabled={!copied}>
-              <ActionIcon variant="subtle" color={copied ? "teal" : "gray"} onClick={copy}>
-                {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-              </ActionIcon>
-            </Tooltip>
-          )}
+          {({ copied, copy }) => {
+            const copyLabel = copied ? translation.buttons.copied : translation.buttons.copy;
+            return (
+              <Tooltip label={copyLabel} withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color={copied ? success : "gray"}
+                  aria-label={copyLabel}
+                  onClick={copy}
+                >
+                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                </ActionIcon>
+              </Tooltip>
+            );
+          }}
         </CopyButton>
       </Group>
       <Text size="sm">{translation.texts.enterCode}</Text>
@@ -115,8 +131,8 @@ export function TotpSetup({ mfaAppName, onVerified, onCancel }: TotpSetupProps) 
         error={codeError}
         disabled={verifying}
       />
-      <Group justify="space-between" mt="xs">
-        <Button variant="subtle" color="gray" onClick={onCancel}>
+      <Group justify="flex-end" gap="xs">
+        <Button variant="default" onClick={onCancel}>
           {translation.buttons.cancel}
         </Button>
         <Button loading={verifying} disabled={code.length < 6} onClick={() => onVerify(code)}>

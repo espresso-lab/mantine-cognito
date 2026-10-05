@@ -1,6 +1,18 @@
-import { Box, Button, Group, Modal, Paper, Stack, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Group,
+  Modal,
+  Paper,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconFingerprint } from "@tabler/icons-react";
+import { IconFingerprint, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   disableMFA,
@@ -10,6 +22,7 @@ import {
   removePasskey,
 } from "../Context/cognito";
 import { TotpSetup } from "./TotpSetup";
+import { useRoleColor } from "../Hooks/useRoleColor";
 import { useTranslation } from "../Hooks/useTranslation.ts";
 
 interface WebAuthnCredential {
@@ -32,57 +45,48 @@ function formatError(err: unknown): string {
   return `${error.name ?? "Error"}: ${message}${error.code ? ` (${error.code})` : ""}`;
 }
 
-function StatusDot({ label }: { label: string }) {
-  return (
-    <Group gap={5} wrap="nowrap">
-      <Box w={6} h={6} bdrs="50%" bg="var(--mantine-color-teal-filled)" />
-      <Text fz={12} fw={600} c="teal">
-        {label}
-      </Text>
-    </Group>
-  );
-}
-
 function ConfirmAction({
-  label,
+  trigger,
   title,
-  description,
+  message,
   confirmLabel,
-  cancelLabel,
   onConfirm,
 }: {
-  label: string;
+  trigger: (open: () => void) => ReactNode;
   title: string;
-  description: string;
+  message: string;
   confirmLabel: string;
-  cancelLabel: string;
   onConfirm: () => void;
 }) {
+  const translation = useTranslation();
   const [opened, { open, close }] = useDisclosure(false);
 
   return (
     <>
-      <Button variant="subtle" color="red" size="compact-sm" onClick={open}>
-        {label}
-      </Button>
-      <Modal opened={opened} onClose={close} title={title} size="sm" centered>
-        <Stack gap="md">
-          <Text size="sm">{description}</Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={close}>
-              {cancelLabel}
-            </Button>
-            <Button
-              color="red"
-              onClick={() => {
-                close();
-                onConfirm();
-              }}
-            >
-              {confirmLabel}
-            </Button>
-          </Group>
-        </Stack>
+      {trigger(open)}
+      <Modal
+        opened={opened}
+        onClose={close}
+        title={title}
+        centered
+        radius="md"
+        closeButtonProps={{ "aria-label": translation.buttons.close }}
+      >
+        <Text size="sm">{message}</Text>
+        <Group justify="flex-end" gap="xs" mt="md">
+          <Button variant="default" onClick={close}>
+            {translation.buttons.cancel}
+          </Button>
+          <Button
+            color="red"
+            onClick={() => {
+              close();
+              onConfirm();
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </Group>
       </Modal>
     </>
   );
@@ -95,7 +99,6 @@ function SecurityRow({
   activeLabel,
   inactiveLabel,
   action,
-  withDivider,
 }: {
   title: string;
   description: string;
@@ -103,29 +106,21 @@ function SecurityRow({
   activeLabel: string;
   inactiveLabel: string;
   action: ReactNode;
-  withDivider?: boolean;
 }) {
+  const success = useRoleColor("success");
   return (
-    <Group
-      align="center"
-      gap={16}
-      wrap="nowrap"
-      py={14}
-      style={
-        withDivider
-          ? { borderBottom: "1px solid var(--mantine-color-default-border)" }
-          : undefined
-      }
-    >
-      <Stack gap={3} flex={1} miw={0}>
-        <Group gap={8} wrap="nowrap">
-          <Text fz={14} fw={500}>
+    <Group align="center" gap="md" wrap="nowrap" py="sm">
+      <Stack gap={4} flex={1} miw={0}>
+        <Group gap="xs" wrap="wrap">
+          <Text size="sm" fw={500}>
             {title}
           </Text>
-          {active && <StatusDot label={activeLabel} />}
+          <Badge variant="light" color={active ? success : "gray"}>
+            {active ? activeLabel : inactiveLabel}
+          </Badge>
         </Group>
-        <Text fz={13} c="dimmed">
-          {active ? description : `${inactiveLabel} · ${description}`}
+        <Text size="sm" c="dimmed">
+          {description}
         </Text>
       </Stack>
       <Box flex="none">{action}</Box>
@@ -207,15 +202,17 @@ export function MFASetup({
         active={totpMode === "enabled"}
         activeLabel={translation.badges.active}
         inactiveLabel={translation.badges.inactive}
-        withDivider
         action={
           totpMode === "enabled" ? (
             <ConfirmAction
-              label={translation.buttons.disable}
-              title={translation.title.authenticatorApp}
-              description={translation.texts.confirmDisableTotp}
+              trigger={(open) => (
+                <Button variant="default" size="compact-sm" onClick={open}>
+                  {translation.buttons.disable}
+                </Button>
+              )}
+              title={translation.title.disableTotp}
+              message={translation.texts.confirmDisableTotp}
               confirmLabel={translation.buttons.disable}
-              cancelLabel={translation.buttons.cancel}
               onConfirm={onDisableTotp}
             />
           ) : (
@@ -227,9 +224,10 @@ export function MFASetup({
           )
         }
       />
+      <Divider />
 
       {totpMode === "enabling" && (
-        <Box py={14}>
+        <Box py="sm">
           <TotpSetup
             mfaAppName={mfaAppName}
             onVerified={() => {
@@ -251,8 +249,9 @@ export function MFASetup({
             inactiveLabel={translation.badges.inactive}
             action={
               <Button
-                variant="default"
-                size="compact-sm"
+                variant="light"
+                size="xs"
+                leftSection={<IconPlus size={14} />}
                 loading={passkeyLoading}
                 onClick={onAddPasskey}
               >
@@ -262,44 +261,54 @@ export function MFASetup({
           />
 
           {passkeys.length > 0 && (
-            <Stack gap={8} pb={14}>
-              {passkeys.map((passkey) => (
-                <Paper
-                  key={passkey.credentialId}
-                  withBorder
-                  radius={10}
-                  px={13}
-                  py={11}
-                  bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))"
-                >
-                  <Group gap={12} wrap="nowrap">
-                    <IconFingerprint
-                      size={19}
-                      stroke={1.7}
-                      style={{ color: "var(--mantine-color-dimmed)" }}
-                    />
-                    <Stack gap={2} flex={1} miw={0}>
-                      <Text fz={13} fw={500} truncate>
-                        {passkey.friendlyCredentialName || translation.title.passkeys}
-                      </Text>
-                      {passkey.createdAt && (
-                        <Text fz={12} c="dimmed">
-                          {translation.texts.addedOn}{" "}
-                          {new Date(passkey.createdAt).toLocaleDateString()}
+            <Stack gap="xs" pb="sm">
+              {passkeys.map((passkey) => {
+                const name = passkey.friendlyCredentialName || translation.title.passkeys;
+                return (
+                  <Paper key={passkey.credentialId} withBorder radius="md" px="sm" py="xs">
+                    <Group gap="sm" wrap="nowrap">
+                      <IconFingerprint
+                        size={18}
+                        stroke={1.7}
+                        color="var(--mantine-color-dimmed)"
+                      />
+                      <Stack gap={2} flex={1} miw={0}>
+                        <Text size="sm" fw={500} truncate>
+                          {name}
                         </Text>
-                      )}
-                    </Stack>
-                    <ConfirmAction
-                      label={translation.buttons.remove}
-                      title={translation.title.passkeys}
-                      description={translation.texts.confirmRemovePasskey}
-                      confirmLabel={translation.buttons.confirmRemove}
-                      cancelLabel={translation.buttons.cancel}
-                      onConfirm={() => onRemovePasskey(passkey.credentialId)}
-                    />
-                  </Group>
-                </Paper>
-              ))}
+                        {passkey.createdAt && (
+                          <Text size="sm" c="dimmed">
+                            {translation.texts.addedOn}{" "}
+                            {new Date(passkey.createdAt).toLocaleDateString(translation.locale, {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })}
+                          </Text>
+                        )}
+                      </Stack>
+                      <ConfirmAction
+                        trigger={(open) => (
+                          <Tooltip label={translation.buttons.delete} withArrow>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              aria-label={`${translation.buttons.delete}: ${name}`}
+                              onClick={open}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                        title={translation.title.deletePasskey}
+                        message={translation.texts.confirmDeletePasskey(name)}
+                        confirmLabel={translation.buttons.delete}
+                        onConfirm={() => onRemovePasskey(passkey.credentialId)}
+                      />
+                    </Group>
+                  </Paper>
+                );
+              })}
             </Stack>
           )}
         </>
