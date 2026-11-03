@@ -206,8 +206,17 @@ export async function getAccessToken() {
   return session.tokens?.accessToken?.toString();
 }
 
-export async function getIdToken() {
+/**
+ * Amplify renews a token only seconds before it expires. A request that keeps using the token while it
+ * runs — a streamed answer calling tools on the user's behalf — passes how long the token must still be
+ * valid, and gets a renewed one when less is left.
+ */
+export async function getIdToken(minValiditySeconds = 0) {
   const session = await fetchAuthSession();
+  const expiresAt = session.tokens?.idToken?.payload.exp;
+  if (minValiditySeconds > 0 && expiresAt !== undefined && expiresAt * 1000 - Date.now() < minValiditySeconds * 1000) {
+    return (await fetchAuthSession({ forceRefresh: true })).tokens?.idToken?.toString();
+  }
   return session.tokens?.idToken?.toString();
 }
 
