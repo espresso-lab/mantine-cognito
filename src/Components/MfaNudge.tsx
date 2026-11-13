@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Group,
   Loader,
@@ -16,7 +17,7 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { getMFAPreference, getPasskeys, registerPasskey } from "../Context/cognito";
+import { getMFAPreference, getPasskeys, passkeyProblem, passkeysSupported, registerPasskey } from "../Context/cognito";
 import { TotpSetup } from "./TotpSetup";
 import { useAuth } from "../Hooks/useAuth";
 import { useTranslation } from "../Hooks/useTranslation.ts";
@@ -27,7 +28,35 @@ export interface MfaConfig {
   enablePasskeys?: boolean;
 }
 
-const DISMISS_KEY = "mantine-cognito.mfa-nudge-dismissed";
+const SNOOZE_KEY = "mantine-cognito.mfa-nudge-snoozed-until";
+const SNOOZE_DAYS = 14;
+
+/** „Später erinnern“ holds for two weeks: an app that starts with the computer would ask on every start. */
+function isSnoozed() {
+  try {
+    return Number(localStorage.getItem(SNOOZE_KEY) ?? 0) > Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function snooze() {
+  try {
+    localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_DAYS * 24 * 60 * 60 * 1000));
+  } catch {
+    void 0;
+  }
+}
+
+/** A passkey made anywhere — the web app, another device — secures the account, whether or not this window can make one. */
+async function hasPasskey() {
+  try {
+    const { credentials } = await getPasskeys();
+    return (credentials ?? []).length > 0;
+  } catch {
+    return false;
+  }
+}
 
 function OptionButton({
   icon,
@@ -76,30 +105,19 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
   const [opened, setOpened] = useState(false);
   const [view, setView] = useState<"choice" | "totp">("choice");
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const offerPasskey = config.enablePasskeys !== false && passkeysSupported();
 
   useEffect(() => {
-    if (!isAuthenticated || config.nudge === false) {
-      return;
-    }
-    try {
-      if (sessionStorage.getItem(DISMISS_KEY)) {
-        return;
-      }
-    } catch {
+    if (!isAuthenticated || config.nudge === false || isSnoozed()) {
       return;
     }
     let active = true;
     (async () => {
       try {
         const pref = await getMFAPreference();
-        if (pref.enabled?.includes("TOTP")) {
+        if (pref.enabled?.includes("TOTP") || (await hasPasskey())) {
           return;
-        }
-        if (config.enablePasskeys !== false) {
-          const { credentials } = await getPasskeys();
-          if ((credentials ?? []).length > 0) {
-            return;
-          }
         }
         if (active) {
           setOpened(true);
@@ -111,19 +129,16 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
     return () => {
       active = false;
     };
-  }, [isAuthenticated, config.nudge, config.enablePasskeys]);
+  }, [isAuthenticated, config.nudge]);
 
   const close = () => {
     setOpened(false);
     setView("choice");
+    setError(undefined);
   };
 
   const dismiss = () => {
-    try {
-      sessionStorage.setItem(DISMISS_KEY, "1");
-    } catch {
-      void 0;
-    }
+    snooze();
     close();
   };
 
@@ -131,11 +146,23 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
 
   const onSetupPasskey = async () => {
     setPasskeyLoading(true);
+    setError(undefined);
     try {
       await registerPasskey();
       complete();
-    } catch {
-      void 0;
+    } catch (reason) {
+      switch (passkeyProblem(reason)) {
+        case "cancelled":
+          break;
+        case "exists":
+          complete();
+          break;
+        case "unavailable":
+          setError(translation.errors.passkeyUnavailable);
+          break;
+        default:
+          setError(translation.errors.generic);
+      }
     } finally {
       setPasskeyLoading(false);
     }
@@ -159,7 +186,12 @@ export function MfaNudge({ config }: { config: MfaConfig }) {
         {view === "choice" && (
           <>
             <Stack gap="sm">
-              {config.enablePasskeys !== false && (
+              {error && (
+                <Alert color="red" title={translation.title.passkeySetupFailed}>
+                  {error}
+                </Alert>
+              )}
+              {offerPasskey && (
                 <OptionButton
                   icon={<IconFingerprint size={24} color="var(--mantine-color-dimmed)" />}
                   title={translation.buttons.setupPasskey}

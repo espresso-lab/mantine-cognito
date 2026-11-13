@@ -18,6 +18,8 @@ import {
   disableMFA,
   getMFAPreference,
   getPasskeys,
+  passkeyProblem,
+  passkeysSupported,
   registerPasskey,
   removePasskey,
 } from "../Context/cognito";
@@ -179,7 +181,18 @@ export function MFASetup({
       await registerPasskey();
       await loadPasskeys();
     } catch (err) {
-      onError?.(formatError(err));
+      switch (passkeyProblem(err)) {
+        case "cancelled":
+          break;
+        case "exists":
+          onError?.(translation.errors.passkeyExists);
+          break;
+        case "unavailable":
+          onError?.(translation.errors.passkeyUnavailable);
+          break;
+        default:
+          onError?.(formatError(err));
+      }
     } finally {
       setPasskeyLoading(false);
     }
@@ -248,15 +261,17 @@ export function MFASetup({
             activeLabel={translation.badges.active}
             inactiveLabel={translation.badges.inactive}
             action={
-              <Button
-                variant="light"
-                size="xs"
-                leftSection={<IconPlus size={14} />}
-                loading={passkeyLoading}
-                onClick={onAddPasskey}
-              >
-                {translation.buttons.addPasskey}
-              </Button>
+              passkeysSupported() && (
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconPlus size={14} />}
+                  loading={passkeyLoading}
+                  onClick={onAddPasskey}
+                >
+                  {translation.buttons.addPasskey}
+                </Button>
+              )
             }
           />
 

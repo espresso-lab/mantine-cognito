@@ -132,6 +132,10 @@ export async function signIn(email: string, password: string): Promise<SignInRes
   };
 }
 
+/**
+ * Cognito answers a passkey sign-in of an account without a passkey with the choice of first factors
+ * instead of a challenge; the remembered address then no longer stands for a passkey.
+ */
 export async function signInWithPasskey(email: string): Promise<SignInResult> {
   await amplifySignOut().catch(() => {});
   const { isSignedIn, nextStep } = await amplifySignIn({
@@ -143,11 +147,50 @@ export async function signInWithPasskey(email: string): Promise<SignInResult> {
   });
   if (isSignedIn) {
     setPasskeyHint(email);
+  } else if (nextStep.signInStep === "CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION") {
+    clearPasskeyHint();
   }
   return {
     isSignedIn,
     nextStep: nextStep.signInStep,
   };
+}
+
+/** Whether this window can run a passkey ceremony at all — a native shell may stand in for the browser's API. */
+export function passkeysSupported() {
+  return (
+    typeof window !== "undefined" &&
+    window.isSecureContext &&
+    "credentials" in navigator &&
+    typeof window.PublicKeyCredential === "function"
+  );
+}
+
+export type PasskeyProblem = "cancelled" | "exists" | "unavailable";
+
+/**
+ * What went wrong with a passkey in the terms the user acts on: dismissed the system dialog, already
+ * holds one on this device, or cannot use passkeys here. Anything else is an ordinary error.
+ */
+export function passkeyProblem(error: unknown): PasskeyProblem | null {
+  switch (error instanceof Error ? error.name : "") {
+    case "PasskeyRegistrationCanceled":
+    case "PasskeyAuthenticationCanceled":
+    case "PasskeyOperationAborted":
+    case "NotAllowedError":
+    case "AbortError":
+      return "cancelled";
+    case "PasskeyAlreadyExists":
+    case "InvalidStateError":
+      return "exists";
+    case "PasskeyNotSupported":
+    case "RelyingPartyMismatch":
+    case "NotSupportedError":
+    case "SecurityError":
+      return "unavailable";
+    default:
+      return null;
+  }
 }
 
 export async function confirmSignInWithCode(code: string): Promise<SignInResult> {

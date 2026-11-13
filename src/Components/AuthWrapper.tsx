@@ -5,6 +5,7 @@ import { Register } from "./Register";
 import { ForgotPassword } from "./ForgotPassword";
 import { MfaNudge, MfaConfig } from "./MfaNudge";
 import { useTranslation } from "../Hooks/useTranslation.ts";
+import { passkeysSupported } from "../Context/cognito";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -53,7 +54,7 @@ export function AuthWrapper({ children, headerSection, footerSection, mfa }: Aut
 
         <Divider my="md" />
 
-        {stage === "login" && <Login />}
+        {stage === "login" && <Login passkeys={mfa?.enablePasskeys !== false && passkeysSupported()} />}
         {stage === "register" && <Register />}
         {stage === "forgotPassword" && <ForgotPassword />}
       </Paper>

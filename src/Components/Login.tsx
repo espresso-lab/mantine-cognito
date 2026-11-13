@@ -12,9 +12,9 @@ import {
 } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm } from "@mantine/form";
 import { IconExclamationCircle, IconFingerprint } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../Hooks/useAuth";
-import { getPasskeyHint, type SignInResult } from "../Context/cognito";
+import { getPasskeyHint, passkeyProblem, type SignInResult } from "../Context/cognito";
 import { NewPasswordInput } from "./NewPasswordInput";
 import { CodeInput } from "./CodeInput";
 import { ResendCode } from "./ResendCode";
@@ -23,12 +23,16 @@ import { useTranslation } from "../Hooks/useTranslation.ts";
 
 type LoginStep = "credentials" | "mfa" | "verification" | "newPassword";
 
-export function Login() {
+interface LoginComponentProps {
+  passkeys: boolean;
+}
+
+export function Login({ passkeys }: LoginComponentProps) {
   const translation = useTranslation();
   const [loading, setLoading] = useState<"login" | "passkey" | false>(false);
   const [step, setStep] = useState<LoginStep>("credentials");
   const [error, setError] = useState<string>();
-  const autoPasskeyAttempted = useRef(false);
+  const [passkeyHint, setPasskeyHint] = useState(() => (passkeys ? getPasskeyHint() : null));
   const {
     login,
     loginWithPasskey,
@@ -41,7 +45,7 @@ export function Login() {
   } = useAuth();
 
   const loginForm = useForm({
-    initialValues: { email: "", password: "" },
+    initialValues: { email: passkeyHint ?? "", password: "" },
     validate: {
       email: isEmail(translation.validation.email),
       password: isNotEmpty(translation.validation.password),
@@ -113,6 +117,10 @@ export function Login() {
       case "RESET_PASSWORD":
         setStage("forgotPassword");
         return;
+      case "CONTINUE_SIGN_IN_WITH_FIRST_FACTOR_SELECTION":
+        setPasskeyHint(null);
+        setError(translation.errors.noPasskey);
+        return;
       default:
         setStep("credentials");
         setError(translation.errors.unsupportedStep);
@@ -164,34 +172,38 @@ export function Login() {
     }
   }
 
-  async function onPasskeyLogin(email?: string, silent = false) {
-    const passkeyEmail = email ?? loginForm.values.email;
-    if (!email && (await loginForm.validateField("email")).hasError) {
+  async function onPasskeyLogin() {
+    if (loginForm.validateField("email").hasError) {
       return;
     }
     setLoading("passkey");
     setError(undefined);
     try {
-      continueWith(await loginWithPasskey(passkeyEmail));
+      continueWith(await loginWithPasskey(loginForm.values.email));
     } catch (reason) {
-      if (!silent) {
-        handleAuthError(reason);
+      switch (passkeyProblem(reason)) {
+        case "cancelled":
+          break;
+        case "unavailable":
+          setError(translation.errors.passkeyUnavailable);
+          break;
+        default:
+          handleAuthError(reason);
       }
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    const hint = getPasskeyHint();
-    if (!hint || autoPasskeyAttempted.current) {
+  function onSubmitCredentials() {
+    if (passkeyHint && !loginForm.values.password) {
+      void onPasskeyLogin();
       return;
     }
-    autoPasskeyAttempted.current = true;
-    loginForm.setFieldValue("email", hint);
-    void onPasskeyLogin(hint, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!loginForm.validate().hasErrors) {
+      void onLogin();
+    }
+  }
 
   const errorAlert = error && (
     <Alert
@@ -296,39 +308,65 @@ export function Login() {
     );
   }
 
+  const passkeyButton = passkeys && (
+    <Button
+      fullWidth
+      variant={passkeyHint ? "filled" : "default"}
+      leftSection={<IconFingerprint size={16} />}
+      onClick={() => void onPasskeyLogin()}
+      loading={loading === "passkey"}
+      disabled={loading === "login"}
+    >
+      {translation.buttons.loginWithPasskey}
+    </Button>
+  );
+
   return (
-    <form onSubmit={loginForm.onSubmit(() => onLogin())}>
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmitCredentials();
+      }}
+    >
       <Stack gap="md">
         {errorAlert}
         <TextInput
-          autoFocus
+          autoFocus={!passkeyHint}
           autoComplete="username webauthn"
           label={translation.fields.email}
           withAsterisk
           placeholder={translation.placeholders.email}
           {...loginForm.getInputProps("email")}
         />
+        {passkeyHint && (
+          <>
+            {passkeyButton}
+            <Divider label={translation.texts.orWithPassword} labelPosition="center" />
+          </>
+        )}
         <PasswordInput
           label={translation.fields.password}
           placeholder={translation.placeholders.password}
           autoComplete="current-password"
-          withAsterisk
+          withAsterisk={!passkeyHint}
           {...loginForm.getInputProps("password")}
         />
-        <Button type="submit" fullWidth loading={loading === "login"} disabled={loading === "passkey"}>
+        <Button
+          type="submit"
+          fullWidth
+          variant={passkeyHint ? "default" : "filled"}
+          loading={loading === "login"}
+          disabled={loading === "passkey"}
+        >
           {translation.buttons.login}
         </Button>
-        <Divider />
-        <Button
-          fullWidth
-          variant="default"
-          leftSection={<IconFingerprint size={16} />}
-          onClick={() => onPasskeyLogin()}
-          loading={loading === "passkey"}
-          disabled={loading === "login"}
-        >
-          {translation.buttons.loginWithPasskey}
-        </Button>
+        {!passkeyHint && passkeyButton && (
+          <>
+            <Divider label={translation.texts.or} labelPosition="center" />
+            {passkeyButton}
+          </>
+        )}
         <Group justify="space-between">
           {allowRegistration && (
             <Anchor component="button" type="button" c="dimmed" size="sm" onClick={() => setStage("register")}>

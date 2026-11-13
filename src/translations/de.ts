@@ -1,6 +1,7 @@
 export default {
   locale: "de-DE",
   title: {
+    passkeySetupFailed: "Passkey nicht eingerichtet",
     verifyEmail: "E-Mail-Adresse bestätigen",
     login: "Anmelden",
     register: "Registrieren",
@@ -61,6 +62,8 @@ export default {
     sendCode: "Code senden",
   },
   texts: {
+    or: "oder",
+    orWithPassword: "oder mit Passwort",
     verifyEmail:
       "Deine neue E-Mail-Adresse ist noch nicht bestätigt. Gib den 6-stelligen Code ein, den wir an sie gesendet haben. Bis dahin funktioniert „Passwort vergessen?“ nicht.",
     emailVerified: "E-Mail-Adresse wurde bestätigt.",
@@ -104,6 +107,9 @@ export default {
     special: "Mindestens ein Sonderzeichen",
   },
   errors: {
+    noPasskey: "Für dieses Konto ist noch kein Passkey hinterlegt. Melde dich mit deinem Passwort an – danach kannst du einen Passkey einrichten.",
+    passkeyUnavailable: "Passkeys sind auf diesem Gerät oder in diesem Browser nicht verfügbar. Melde dich mit deinem Passwort an.",
+    passkeyExists: "Auf diesem Gerät ist schon ein Passkey für dein Konto gespeichert.",
     unsupportedStep: "Dieser Anmeldeschritt wird hier nicht unterstützt. Bitte wende dich an den Support.",
     noVerifiedEmail: "Für dieses Konto ist keine bestätigte E-Mail-Adresse hinterlegt. Bitte wende dich an den Support.",
     noCode: "Der Einrichtungsschlüssel konnte nicht geladen werden.",

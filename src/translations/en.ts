@@ -1,6 +1,7 @@
 export default {
   locale: "en-US",
   title: {
+    passkeySetupFailed: "Passkey not set up",
     verifyEmail: "Verify email address",
     login: "Sign in",
     register: "Register",
@@ -60,6 +61,8 @@ export default {
     sendCode: "Send code",
   },
   texts: {
+    or: "or",
+    orWithPassword: "or with your password",
     verifyEmail:
       "Your new email address is not verified yet. Enter the 6-digit code we sent to it. Until then, \"Forgot password?\" will not work.",
     emailVerified: "Email address verified.",
@@ -102,6 +105,9 @@ export default {
     special: "At least one special character",
   },
   errors: {
+    noPasskey: "This account has no passkey yet. Sign in with your password – you can add a passkey afterwards.",
+    passkeyUnavailable: "Passkeys are not available on this device or in this browser. Sign in with your password.",
+    passkeyExists: "This device already holds a passkey for your account.",
     unsupportedStep: "This sign-in step is not supported here. Please contact support.",
     noVerifiedEmail: "There is no verified email address for this account. Please contact support.",
     noCode: "The setup key could not be loaded.",

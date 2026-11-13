@@ -17,7 +17,7 @@ export type {
   VerifyAttributeProps,
 } from "./Context/AuthContext";
 
-export type { SignInNextStep, SignOutScope, VerifiableAttribute } from "./Context/cognito";
+export type { PasskeyProblem, SignInNextStep, SignOutScope, VerifiableAttribute } from "./Context/cognito";
 
 export {
   getIdToken,
@@ -25,4 +25,6 @@ export {
   registerPasskey,
   getPasskeys,
   removePasskey,
+  passkeyProblem,
+  passkeysSupported,
 } from "./Context/cognito";
